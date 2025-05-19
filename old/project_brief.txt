@@ -1,0 +1,238 @@
+Project Brief: Scalable KPI Dashboard for Centralized Data Team - Organizational Excellence
+Overview
+
+Before organizational rollout begins, establish core technical infrastructure (Phase 0):
+- Complete dimensional modeling and KPI calculations
+- Build basic dashboard with manual configuration  
+- Validate data accuracy with pilot capability
+- Document technical specifications for future self-service features
+
+Refer to Executive Summary for detailed Phase 0 technical requirements.
+
+You are building a Service Level Objective (SLO) KPI dashboard in Power BI for a centralized data team within a large investment bank. The team currently offers services across:
+
+Data Quality
+Data Extracts
+Change Controls
+Reference Data
+Records Management
+
+The team is focused on financial data products but is expanding into non-product domains by abstracting its work into capabilities that can be offered across the organization. The Jira → Database ingestion is already working, and Power BI Premium licensing is available.
+Key Organizational Objectives
+1. Scalable Operating Model
+
+Self-Service Governance: Enable capability owners to maintain their own configurations without IT dependency
+Federated Ownership: Support multiple teams owning different capabilities while maintaining centralized standards
+Change Management: Version-controlled processes for mapping updates and SLO adjustments with proper approval workflows
+
+2. Cross-Organizational Adoption
+
+Standardized Service Framework: Establish consistent measurement and reporting across all capabilities
+Internal Customer Onboarding: Reduce friction for teams adopting centralized data services
+Business Value Communication: Clear articulation of service value to drive adoption and investment
+
+3. Sustainable Operations
+
+Capability Center of Excellence: Build expertise and standards that can scale across the organization
+Knowledge Management: Embedded documentation and training materials accessible within the dashboard
+Continuous Improvement: Built-in analytics to identify optimization opportunities and service gaps
+
+Organizational Structure & Responsibilities
+Centralized Data Team (Dashboard Owners)
+
+Platform Management: Maintain dashboard infrastructure and core functionality
+Standards & Governance: Establish organization-wide SLO frameworks and measurement standards
+Training & Support: Provide guidance to capability owners and internal customers
+
+Capability Owners (Federated Teams)
+
+Service Definition: Define what constitutes their capability and service boundaries
+SLO Target Setting: Establish realistic and business-aligned performance targets
+Configuration Management: Maintain ticket-type mappings and status definitions for their services
+Performance Accountability: Own the improvement of their capability's performance metrics
+
+Internal Customers (Service Consumers)
+
+Service Utilization: Submit tickets and consume services through standardized processes
+Feedback & Requirements: Provide input on service quality and feature requirements
+Self-Service Access: Use dashboard for service status, performance insights, and escalations
+
+Scalable Configuration Framework
+1. Capability Mapping (Federated Ownership)
+csvticket_type,capability,capability_owner,business_domain
+Bug,Data Quality,Data Quality Team,Financial Products
+Story,Data Extracts,Data Engineering Team,Financial Products
+Epic,Change Controls,Change Management Team,Cross-Domain
+2. Status-to-Time Mapping (Standardized Framework)
+csvstatus_name,time_type,capability,custom_rules
+Backlog,lead,Data Quality,exclude_weekends
+In Progress,cycle,Data Quality,pause_on_waiting
+Done,response,Data Quality,include_handoff_time
+3. SLO Targets Table (Business-Aligned)
+csvcapability_name,time_type,target_days,criticality,business_justification
+Data Quality,lead,2,High,Regulatory compliance requirement
+Data Quality,cycle,4,High,Customer SLA commitment
+Data Extracts,lead,1,Medium,Operational efficiency target
+Organizational Governance Model
+Configuration Change Process
+
+All configuration tables will be maintained directly in Confluence, with structured tables embedded in pages owned by each capability team. This eliminates the need for a separate configuration interface while providing familiar collaboration tools for change management.
+
+Capability Owner Proposal: Make configuration changes directly in their assigned Confluence page sections
+Peer Review: Other capability owners can review and provide feedback
+Standards Validation: Centralized team validates against organizational standards
+Business Approval: Stakeholder approval for SLO target changes
+Audit Trail: All changes logged with business justification and approver
+
+Performance Accountability Framework
+
+Regular Reviews: Monthly capability owner sessions to review performance and identify blockers
+Escalation Paths: Defined processes for persistent SLO breaches
+Improvement Plans: Collaborative development of action plans for underperforming capabilities
+Recognition Programs: Highlight high-performing teams and improvement successes
+
+Technical Foundation (Pre-Phase 1)
+Before organizational rollout begins, establish core technical infrastructure:
+- Complete dimensional modeling and KPI calculations
+- Build basic dashboard with manual configuration
+- Validate data accuracy with pilot capability
+- Document technical specifications for future self-service features
+
+Refer to Executive Summary for detailed technical requirements.
+
+Scalability Features for Organizational Growth
+1. Multi-Tenant Architecture
+
+Capability Isolation: Each team can customize their view while maintaining organizational consistency
+Role-Based Access: Granular permissions for different organizational levels
+Branded Capability Views: Teams can add custom branding while maintaining overall platform look
+
+2. Self-Service Configuration
+
+Confluence-Based Configuration Management: Capability owners maintain their configurations directly in structured Confluence tables, utilizing familiar wiki editing capabilities
+Validation Rules: Automated checks during nightly pipeline execution, with validation results posted back to Confluence
+Change History & Rollback: Leverage Confluence's native page versioning for audit trails and configuration rollback to previous versions
+
+3. Organizational Knowledge Base
+
+Embedded Learning: Contextual help and best practices within the dashboard
+Success Stories: Share improvement case studies across teams
+Community Features: Discussion forums and knowledge sharing between capability owners
+
+Dashboard Design for Organizational Impact
+Executive Overview Page
+
+Organization-Wide Performance: Portfolio view of all capabilities
+Strategic Insights: Link service performance to business outcomes
+Investment Recommendations: Data-driven suggestions for capability improvements
+
+Capability Owner Workspace
+
+Service Health Dashboard: Real-time view of capability performance
+Configuration Management: Self-service tools for maintaining service definitions
+Improvement Analytics: Identify optimization opportunities and track progress
+
+Internal Customer Portal
+
+Service Catalog: Clear descriptions of available capabilities and SLOs
+Request Tracking: Real-time status of submitted tickets
+Service Quality Feedback: Mechanism to provide input on service experiences
+
+Organizational Analytics
+
+Cross-Capability Benchmarking: Compare performance across similar services
+Resource Utilization: Understand capacity and bottlenecks across teams
+Adoption Metrics: Track growth in service utilization and customer satisfaction
+
+Implementation Roadmap for Organizational Success
+Phase 0: Technical MVP (Weeks 1-4) - See Executive Summary
+- Establish technical foundation with manual processes
+- Validate KPI logic and dashboard functionality with pilot team
+- Prepare for organizational features in subsequent phases
+
+Phase 1: Foundation (Weeks 5-8)
+
+Establish governance framework and stakeholder engagement model
+Design core dashboard structure with organizational standards
+Implement basic capability mapping and SLO tracking
+Configuration Management: Implement automated sync between Confluence business interface and Power BI technical implementation, with nightly synchronization and change tracking integration
+Configuration Management: Direct links to Confluence pages for updating service definitions, with real-time reflection of changes in dashboard metrics
+Phase 2: Self-Service Enablement (Weeks 9-12)
+
+Set up Confluence page templates and permissions structure for capability teams to self-manage their configurations
+Develop training materials and onboarding programs
+Implement approval workflows and audit trails
+
+Phase 3: Organizational Adoption (Weeks 13-16)
+
+Roll out to pilot capability teams with hands-on support
+Gather feedback and refine processes based on real usage
+Establish regular review cadence and improvement processes
+
+Phase 4: Scale & Optimize (Weeks 17-20)
+
+Expand to all capabilities across the organization
+Implement advanced analytics and optimization features
+Develop center of excellence and community practices
+
+Success Metrics for Organizational Impact
+Adoption Metrics
+
+Number of capabilities actively tracked
+Percentage of capability owners regularly using self-service features
+Time to onboard new capabilities
+
+Governance Effectiveness
+
+Configuration change cycle time
+Percentage of changes with proper approvals
+Audit compliance scores
+
+Configuration Synchronization Governance
+Sync Process Ownership
+
+Centralized Data Team: Maintains sync infrastructure and monitors sync health
+Capability Owners: Responsible for Confluence page accuracy and timely updates
+IT Operations: Ensures sync reliability and troubleshoots sync failures
+
+Change Propagation Timeline
+
+Confluence changes made by capability owners during business hours
+Nightly sync at 2:00 AM UTC transfers changes to Power BI
+Dashboard reflects new configurations by morning business hours
+Manual sync available for urgent changes with IT approval
+
+Sync Failure Response
+
+Automated alerts to centralized data team within 1 hour of failure
+Rollback procedures to restore previous configuration
+Manual sync capability for critical changes during outages
+
+Business Value Realization
+
+Improvement in SLO adherence across organization
+Reduction in service escalations
+Internal customer satisfaction scores
+Cost efficiency improvements per capability
+
+Key Success Factors
+
+Executive Sponsorship: Strong leadership support for standardization and accountability
+Change Management: Comprehensive approach to shifting from ad-hoc to standardized service measurement
+Cultural Transformation: Foster data-driven decision making and continuous improvement mindset
+Community Building: Create network of capability owners sharing best practices and supporting each other
+Balance: Maintain flexibility for unique requirements while enforcing organizational standards
+
+Phase 0 to Phase 1 Transition Criteria
+Before proceeding from technical foundation to organizational features:
+✓ Core KPI calculations validated against business requirements
+✓ Dimensional model handles all five capabilities
+✓ Basic dashboard performs under expected load
+✓ Data accuracy confirmed by pilot capability team
+✓ Manual reporting process documented and tested
+✓ Confluence configuration approach validated
+✓ Infrastructure scaled for multi-capability usage
+✓ Dashboard performance acceptable under expected load
+✓ Data accuracy confirmed by capability pilot team
+✓ Technical documentation complete for future self-service features
+✓ Infrastructure scaled for multi-capability usage

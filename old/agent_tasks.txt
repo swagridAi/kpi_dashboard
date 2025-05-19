@@ -1,0 +1,10 @@
+5 · Deliverables Requested from Agent
+Technical design doc covering items 1-6 above.
+
+Prototype SQL/DAX for one KPI (lead time).
+
+Confluence-to-DB ETL script (proof-of-concept).
+
+Alerting/Pub-Sub plan incl. tooling choice.
+
+Risk & dependency log for Jira-Cloud migration.

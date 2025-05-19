@@ -1,0 +1,17 @@
+Database column name,Data type,Schema
+id,BIGINT,jira_changelog
+key,VARCHAR,jira_changelog
+ticket_created,TIMESTAMP,jira_changelog
+ticket_updated,TIMESTAMP,jira_changelog
+resolution_date,TIMESTAMP,jira_changelog
+change_created,TIMESTAMP,jira_changelog
+field,VARCHAR,jira_changelog
+field_type,VARCHAR,jira_changelog
+from_string,VARCHAR,jira_changelog
+to_string,VARCHAR,jira_changelog
+partition_order,BIGINT,jira_changelog
+new_partition,BOOLEAN,jira_changelog
+change_start,TIMESTAMP,jira_changelog
+change_end,TIMESTAMP,jira_changelog
+batch_id,BIGINT,jira_changelog
+active,BIGINT,jira_changelog

@@ -1,0 +1,234 @@
+// Met_SLA - Calculated Column for Fact_Ticket_Summary
+// Determines if each ticket met its SLA based on ResolutionTimeDays vs SLA_Days
+
+Met_SLA = 
+VAR ActualResolutionDays = Fact_Ticket_Summary[ResolutionTimeDays]
+VAR IsResolved = Fact_Ticket_Summary[resolution_date] <> BLANK()
+VAR IssueType = Fact_Ticket_Summary[issue_type]
+
+// Get SLA target using the hierarchical fallback approach
+VAR SLA_Target = 
+    // First try to get capability-specific SLA
+    COALESCE(
+        // Priority 1: Capability-level SLA (through issue type mapping)
+        CALCULATE(
+            RELATED(Dim_Capability[ResponseTimeTargetDays]),
+            USERELATIONSHIP(
+                Fact_Ticket_Summary[issue_type], 
+                Config_Issue_Type_Capability_Mapping[IssueType]
+            )
+        ),
+        
+        // Priority 2: Default SLA fallback
+        CALCULATE(
+            MAX(Default_SLA_Table[SLA_Days]),
+            USERELATIONSHIP(Fact_Ticket_Summary[issue_type], Default_SLA_Table[TicketType]),
+            Default_SLA_Table[IsActive] = TRUE
+        ),
+        
+        // Priority 3: Ultimate fallback (5 days)
+        5
+    )
+
+// Determine SLA achievement
+VAR SLA_Result = 
+    SWITCH(
+        TRUE(),
+        
+        // Case 1: Ticket is not resolved - Cannot determine SLA achievement yet
+        NOT IsResolved, 
+            BLANK(),
+        
+        // Case 2: SLA target is missing or invalid
+        OR(SLA_Target = BLANK(), SLA_Target <= 0),
+            BLANK(),
+        
+        // Case 3: Resolution time is missing or invalid
+        OR(ActualResolutionDays = BLANK(), ActualResolutionDays < 0),
+            BLANK(),
+        
+        // Case 4: Ticket resolved within SLA
+        ActualResolutionDays <= SLA_Target,
+            TRUE(),
+        
+        // Case 5: Ticket resolved outside SLA
+        ActualResolutionDays > SLA_Target,
+            FALSE()
+    )
+
+RETURN SLA_Result
+
+/* Alternative simplified version:
+Met_SLA = 
+IF(
+    AND(
+        Fact_Ticket_Summary[resolution_date] <> BLANK(),
+        Fact_Ticket_Summary[ResolutionTimeDays] <> BLANK()
+    ),
+    Fact_Ticket_Summary[ResolutionTimeDays] <= 
+    CALCULATE(
+        MAX(Default_SLA_Table[SLA_Days]),
+        USERELATIONSHIP(Fact_Ticket_Summary[issue_type], Default_SLA_Table[TicketType])
+    ),
+    BLANK()
+)
+*/
+
+// Additional supporting calculated columns for comprehensive SLA analysis
+
+// SLA Status - Text representation of SLA performance
+SLA_Status = 
+SWITCH(
+    TRUE(),
+    
+    // Not yet resolved
+    Fact_Ticket_Summary[resolution_date] = BLANK(),
+        IF(
+            Fact_Ticket_Summary[ResolutionTimeDays] > 
+            CALCULATE(
+                MAX(Default_SLA_Table[SLA_Days]),
+                USERELATIONSHIP(Fact_Ticket_Summary[issue_type], Default_SLA_Table[TicketType])
+            ),
+            "Open - SLA Breached",
+            "Open - Within SLA"
+        ),
+    
+    // Resolved tickets
+    Fact_Ticket_Summary[Met_SLA] = TRUE,
+        "Resolved - SLA Met",
+    
+    Fact_Ticket_Summary[Met_SLA] = FALSE,
+        "Resolved - SLA Missed",
+    
+    // Default case
+    "Unknown"
+)
+
+// SLA Variance in Days - How many days over/under the SLA target
+SLA_Variance_Days = 
+VAR SLA_Target = 
+    CALCULATE(
+        MAX(Default_SLA_Table[SLA_Days]),
+        USERELATIONSHIP(Fact_Ticket_Summary[issue_type], Default_SLA_Table[TicketType])
+    )
+VAR ActualDays = Fact_Ticket_Summary[ResolutionTimeDays]
+
+RETURN 
+    IF(
+        AND(SLA_Target <> BLANK(), ActualDays <> BLANK()),
+        ActualDays - SLA_Target,
+        BLANK()
+    )
+
+// SLA Performance Score (0-100, where 100 = on-time, <100 = late, >100 = early)
+SLA_Performance_Score = 
+VAR SLA_Target = 
+    CALCULATE(
+        MAX(Default_SLA_Table[SLA_Days]),
+        USERELATIONSHIP(Fact_Ticket_Summary[issue_type], Default_SLA_Table[TicketType])
+    )
+VAR ActualDays = Fact_Ticket_Summary[ResolutionTimeDays]
+
+RETURN 
+    IF(
+        AND(SLA_Target <> BLANK(), SLA_Target > 0, ActualDays <> BLANK()),
+        (SLA_Target / ActualDays) * 100,
+        BLANK()
+    )
+
+/*
+USAGE EXAMPLES FOR FURTHER DAX LOGIC:
+
+1. SLA Achievement Rate by Capability:
+SLA_Achievement_Rate_by_Capability = 
+CALCULATE(
+    DIVIDE(
+        COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] = TRUE)),
+        COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] <> BLANK())),
+        0
+    ) * 100,
+    USERELATIONSHIP(
+        Fact_Ticket_Summary[issue_type], 
+        Config_Issue_Type_Capability_Mapping[IssueType]
+    )
+)
+
+2. Count of SLA Breaches:
+SLA_Breaches_Count = 
+COUNTROWS(
+    FILTER(
+        Fact_Ticket_Summary,
+        [Met_SLA] = FALSE
+    )
+)
+
+3. Average SLA Achievement by Month:
+Monthly_SLA_Achievement = 
+SUMMARIZE(
+    ADDCOLUMNS(
+        FILTER(Fact_Ticket_Summary, [Met_SLA] <> BLANK()),
+        "ResolvedMonth", FORMAT([resolution_date], "YYYY-MM")
+    ),
+    [ResolvedMonth],
+    "SLA_%", DIVIDE(
+        COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] = TRUE)),
+        COUNTROWS(Fact_Ticket_Summary)
+    ) * 100
+)
+
+4. SLA Performance by Priority:
+SLA_by_Priority = 
+SUMMARIZE(
+    Fact_Ticket_Summary,
+    Fact_Ticket_Summary[priority],
+    "Total_Tickets", COUNTROWS(Fact_Ticket_Summary),
+    "SLA_Met", COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] = TRUE)),
+    "SLA_Achievement_%", 
+        DIVIDE(
+            COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] = TRUE)),
+            COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] <> BLANK()))
+        ) * 100
+)
+
+5. Tickets at Risk of SLA Breach (for open tickets):
+At_Risk_Tickets = 
+COUNTROWS(
+    FILTER(
+        Fact_Ticket_Summary,
+        AND(
+            [resolution_date] = BLANK(),
+            [ResolutionTimeDays] >= 
+                CALCULATE(
+                    MAX(Default_SLA_Table[SLA_Days]) * 0.8,
+                    USERELATIONSHIP([issue_type], Default_SLA_Table[TicketType])
+                )
+        )
+    )
+)
+
+6. SLA Compliance by Assignee:
+Assignee_SLA_Performance = 
+SUMMARIZE(
+    Fact_Ticket_Summary,
+    Fact_Ticket_Summary[assignee_display_name],
+    "Tickets_Assigned", COUNTROWS(Fact_Ticket_Summary),
+    "SLA_Compliance_%",
+        DIVIDE(
+            COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] = TRUE)),
+            COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] <> BLANK()))
+        ) * 100,
+    "Avg_Resolution_Days", AVERAGE(Fact_Ticket_Summary[ResolutionTimeDays])
+)
+
+7. SLA Trend Analysis:
+SLA_Trend_6_Months = 
+VAR SixMonthsAgo = EOMONTH(TODAY(), -6)
+RETURN
+CALCULATE(
+    DIVIDE(
+        COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] = TRUE)),
+        COUNTROWS(FILTER(Fact_Ticket_Summary, [Met_SLA] <> BLANK()))
+    ) * 100,
+    Fact_Ticket_Summary[resolution_date] >= SixMonthsAgo
+)
+*/
