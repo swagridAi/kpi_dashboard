@@ -1,23 +1,18 @@
-# Complete Power Query (M) Code for Essential SLO Dashboard
-
-## Overview
-
+Complete Power Query (M) Code for Essential SLO Dashboard
+Overview
 This document provides complete Power Query (M) code for implementing a streamlined SLO Dashboard focused on 6 core KPIs for essential service performance tracking. The simplified model eliminates complex analytics while maintaining comprehensive coverage of time, volume, and quality dimensions.
 
-**Supported Core KPIs:**
-1. **Lead Time** - Creation to work start (business days)
-2. **Cycle Time** - Work start to completion (business days)
-3. **Response Time** - End-to-end resolution (business days)
-4. **Throughput** - Tickets completed per period
-5. **Service Quality** - SLO achievement percentage
-6. **Issue Resolution Time** - Average resolution time
+Supported Core KPIs:
 
----
-
-## Core Fact Tables
-
-### 1. Fact_Ticket_Summary
-```m
+Lead Time - Creation to work start (business days)
+Cycle Time - Work start to completion (business days)
+Response Time - End-to-end resolution (business days)
+Throughput - Tickets completed per period
+Service Quality - SLO achievement percentage
+Issue Resolution Time - Average resolution time
+Core Fact Tables
+1. Fact_Ticket_Summary
+m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -37,59 +32,58 @@ let
     // ===== DATA CLEANING =====
     // Remove rows with missing key data
     FilterActive = Table.SelectRows(PromotedHeaders, each 
-        [Active] = true and 
-        [TicketKey] <> null and 
-        [Created] <> null
+        [active] = true and 
+        [key] <> null and 
+        [created] <> null
     ),
     
     // ===== DATA TYPE TRANSFORMATIONS =====
     TypedTable = Table.TransformColumnTypes(FilterActive, {
-        {"TicketKey", type text},
-        {"IssueType", type text},
-        {"Status", type text},
-        {"Created", type datetime},
-        {"Updated", type datetime},
-        {"ResolutionDate", type datetime},
-        {"AssigneeDisplayName", type text},
-        {"Summary", type text},
-        {"Active", type logical},
-        {"CapabilityKey", type text}
+        {"key", type text},
+        {"issue_type", type text},
+        {"status", type text},
+        {"created", type datetime},
+        {"updated", type datetime},
+        {"resolution_date", type datetime},
+        {"assignee_display_name", type text},
+        {"summary", type text},
+        {"active", type logical}
     }),
     
     // ===== CALCULATED DATE COLUMNS =====
-    AddCreatedDate = Table.AddColumn(TypedTable, "CreatedDate", each Date.From([Created])),
+    AddCreatedDate = Table.AddColumn(TypedTable, "CreatedDate", each Date.From([created])),
     AddResolvedDate = Table.AddColumn(AddCreatedDate, "ResolvedDate", each 
-        if [ResolutionDate] <> null then Date.From([ResolutionDate]) else null),
-    AddUpdatedDate = Table.AddColumn(AddResolvedDate, "UpdatedDate", each Date.From([Updated])),
+        if [resolution_date] <> null then Date.From([resolution_date]) else null),
+    AddUpdatedDate = Table.AddColumn(AddResolvedDate, "UpdatedDate", each Date.From([updated])),
     
     // ===== RESOLUTION TIME CALCULATIONS =====
     AddResolutionTimeDays = Table.AddColumn(AddUpdatedDate, "ResolutionTimeDays", each
-        if [ResolutionDate] <> null then
-            Duration.Days([ResolutionDate] - [Created])
+        if [resolution_date] <> null then
+            Duration.Days([resolution_date] - [created])
         else
-            Duration.Days(DateTime.LocalNow() - [Created])
+            Duration.Days(DateTime.LocalNow() - [created])
     ),
     
     // ===== BUSINESS RULE FLAGS =====
-    AddIsResolved = Table.AddColumn(AddResolutionTimeDays, "IsResolved", each [ResolutionDate] <> null),
+    AddIsResolved = Table.AddColumn(AddResolutionTimeDays, "IsResolved", each [resolution_date] <> null),
     
     AddIsCompleted = Table.AddColumn(AddIsResolved, "Is_Completed", each
         let
             CompletedStatuses = {"Done", "Closed", "Resolved", "Fixed", "Completed"}
         in
-            List.Contains(CompletedStatuses, [Status])
+            List.Contains(CompletedStatuses, [status])
     ),
     
     // ===== SLA TARGET CALCULATION (SIMPLIFIED 2-TIER HIERARCHY) =====
     // Join with capability mapping to get capability-level SLA
-    JoinCapabilityMapping = Table.NestedJoin(AddIsCompleted, {"IssueType"}, 
-        Config_Issue_Type_Capability_Mapping, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
+    JoinCapabilityMapping = Table.NestedJoin(AddIsCompleted, {"issue_type"}, 
+        Config_Issue_Type_Capability_Mapping, {"issue_type"}, "CapabilityMapping", JoinKind.LeftOuter),
     ExpandCapabilityMapping = Table.ExpandTableColumn(JoinCapabilityMapping, "CapabilityMapping", 
         {"CapabilityKey"}, {"MappedCapabilityKey"}),
     
-    // Use CapabilityKey from source or mapping as fallback
+    // Use mapped CapabilityKey only (no source CapabilityKey available)
     AddFinalCapabilityKey = Table.AddColumn(ExpandCapabilityMapping, "FinalCapabilityKey", each
-        if [CapabilityKey] <> null then [CapabilityKey] else [MappedCapabilityKey]
+        [MappedCapabilityKey]
     ),
     
     // Join with capability to get SLA targets
@@ -99,7 +93,7 @@ let
         {"ResponseTimeTargetDays"}, {"CapabilityResponseTimeTarget"}),
     
     // Join with default SLA table as fallback
-    JoinDefaultSLA = Table.NestedJoin(ExpandCapability, {"IssueType"}, 
+    JoinDefaultSLA = Table.NestedJoin(ExpandCapability, {"issue_type"}, 
         Default_SLA_Table, {"TicketType"}, "DefaultSLA", JoinKind.LeftOuter),
     ExpandDefaultSLA = Table.ExpandTableColumn(JoinDefaultSLA, "DefaultSLA", 
         {"SLA_Days"}, {"DefaultSLADays"}),
@@ -129,13 +123,13 @@ let
     
     // ===== STATUS FLAGS =====
     AddDaysInCurrentStatus = Table.AddColumn(AddIsOverdue, "DaysInCurrentStatus", each
-        Duration.Days(DateTime.LocalNow() - [Updated])
+        Duration.Days(DateTime.LocalNow() - [updated])
     ),
     
     // ===== DATA QUALITY VALIDATION =====
     ValidateData = Table.SelectRows(AddDaysInCurrentStatus, each 
         [ResolutionTimeDays] >= 0 and  // No negative resolution times
-        ([IsResolved] = false or [ResolutionDate] <> null)  // Resolved tickets must have resolution date
+        ([IsResolved] = false or [resolution_date] <> null)  // Resolved tickets must have resolution date
     ),
     
     // ===== REMOVE HELPER COLUMNS =====
@@ -153,10 +147,8 @@ let
     })
 in
     FinalTypes
-```
-
-### 2. Fact_Status_Change
-```m
+2. Fact_Status_Change
+m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -170,53 +162,58 @@ let
     
     // ===== INITIAL FILTERING =====
     FilterActive = Table.SelectRows(PromotedHeaders, each 
-        [Active] = true and 
-        [TicketKey] <> null and 
-        [ChangeCreated] <> null
+        [active] = true and 
+        [key] <> null and 
+        [change_created] <> null
     ),
     
     // ===== DATA TYPES =====
     TypedData = Table.TransformColumnTypes(FilterActive, {
-        {"ChangeID", Int64.Type},
-        {"TicketKey", type text},
-        {"ChangeCreated", type datetime},
-        {"FromStatus", type text},
-        {"ToStatus", type text},
-        {"AuthorDisplayName", type text},
-        {"Active", type logical}
+        {"id", Int64.Type},
+        {"key", type text},
+        {"change_created", type datetime},
+        {"from_string", type text},
+        {"to_string", type text},
+        {"active", type logical}
     }),
     
     // ===== SORT FOR DURATION CALCULATIONS =====
-    SortedData = Table.Sort(TypedData, {{"TicketKey", Order.Ascending}, {"ChangeCreated", Order.Ascending}}),
+    SortedData = Table.Sort(TypedData, {{"key", Order.Ascending}, {"change_created", Order.Ascending}}),
     
     // ===== ADD INDEX FOR WINDOW FUNCTIONS =====
     AddIndex = Table.AddIndexColumn(SortedData, "RowIndex", 0),
     
     // ===== CALCULATE PREVIOUS CHANGE TIME =====
-    AddPreviousChangeTime = Table.AddColumn(AddIndex, "PreviousChangeTime", (currentRow) =>
-        let
-            CurrentKey = currentRow[TicketKey],
-            CurrentIndex = currentRow[RowIndex],
-            PreviousRows = Table.SelectRows(SortedData, each 
-                [TicketKey] = CurrentKey and [RowIndex] < CurrentIndex
-            ),
-            LastRow = if Table.RowCount(PreviousRows) > 0 then 
-                Table.Last(PreviousRows)[ChangeCreated] 
-            else 
-                currentRow[ChangeCreated]  // First change for ticket
-        in LastRow
-    ),
+    // Step 1: Sort and index (global index not used after grouping)
+    Sorted = Table.Sort(TypedData, {{"key", Order.Ascending}, {"change_created", Order.Ascending}}),
+
+    // Step 2: Group by 'key' and compute PreviousChangeTime within each group
+    Grouped = Table.Group(Sorted, {"key"}, {
+        {"AllRows", each 
+            let
+                T = Table.AddIndexColumn(_, "LocalIndex", 0),
+                AddPrev = Table.AddColumn(T, "PreviousChangeTime", each 
+                    try T{[LocalIndex]-1}[change_created] 
+                    otherwise [change_created])
+            in
+                Table.RemoveColumns(AddPrev, {"LocalIndex"})
+        }
+    }),
+
+    // Step 3: Combine grouped tables back into one
+    WithPreviousChange = Table.Combine(Grouped[AllRows])
+
     
     // ===== DURATION CALCULATIONS =====
     AddDurationCalendar = Table.AddColumn(AddPreviousChangeTime, "DurationCalendarHours", each
-        Duration.TotalHours([ChangeCreated] - [PreviousChangeTime])
+        Duration.TotalHours([change_created] - [PreviousChangeTime])
     ),
     
     // ===== BUSINESS HOURS CALCULATION =====
     AddDurationBusiness = Table.AddColumn(AddDurationCalendar, "DurationBusinessHours", each
         let
             StartTime = [PreviousChangeTime],
-            EndTime = [ChangeCreated],
+            EndTime = [change_created],
             StartDate = Date.From(StartTime),
             EndDate = Date.From(EndTime),
             
@@ -259,27 +256,27 @@ let
         let
             LeadTimeStatuses = {"In Progress", "Development", "Analysis", "Working"},
             BacklogStatuses = {"Backlog", "New", "Open", "To Do"},
-            FromBacklog = List.Contains(BacklogStatuses, [FromStatus]),
-            ToActive = List.Contains(LeadTimeStatuses, [ToStatus])
+            FromBacklog = List.Contains(BacklogStatuses, [from_string]),
+            ToActive = List.Contains(LeadTimeStatuses, [to_string])
         in FromBacklog and ToActive
     ),
     
     AddCycleTimeFlag = Table.AddColumn(AddLeadTimeFlag, "IsCycleTimeStart", each
         let
             CycleTimeStatuses = {"In Progress", "Development", "Testing", "Review"},
-            ToActive = List.Contains(CycleTimeStatuses, [ToStatus]),
-            FromInactive = not List.Contains(CycleTimeStatuses, [FromStatus])
+            ToActive = List.Contains(CycleTimeStatuses, [to_string]),
+            FromInactive = not List.Contains(CycleTimeStatuses, [from_string])
         in ToActive and FromInactive
     ),
     
     AddResponseTimeFlag = Table.AddColumn(AddCycleTimeFlag, "IsResponseTimeEnd", each
         let
             DoneStatuses = {"Done", "Resolved", "Closed", "Completed"}
-        in List.Contains(DoneStatuses, [ToStatus])
+        in List.Contains(DoneStatuses, [to_string])
     ),
     
     // ===== ADD RELATIONSHIP KEYS =====
-    AddChangeDate = Table.AddColumn(AddResponseTimeFlag, "ChangeDate", each Date.From([ChangeCreated])),
+    AddChangeDate = Table.AddColumn(AddResponseTimeFlag, "ChangeDate", each Date.From([change_created])),
     
     // ===== REMOVE HELPER COLUMNS =====
     RemoveHelpers = Table.RemoveColumns(AddChangeDate, {"RowIndex", "PreviousChangeTime"}),
@@ -295,14 +292,9 @@ let
     })
 in
     FinalTypes
-```
-
----
-
-## Essential Dimensions
-
-### 3. Dim_Date
-```m
+Essential Dimensions
+3. Dim_Date
+m
 let
     // ===== GENERATE DATE RANGE =====
     StartDate = #date(2023, 1, 1),
@@ -367,6 +359,7 @@ let
             (Month = 1 and Day = 1) or
             // Christmas Day
             (Month = 12 and Day = 25) or
+            false // Placeholder for additional holidays
     ),
     
     // ===== ADJUST BUSINESS DAY FOR HOLIDAYS =====
@@ -405,10 +398,8 @@ let
     })
 in
     TypedTable
-```
-
-### 4. Dim_Capability
-```m
+4. Dim_Capability
+m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -448,34 +439,32 @@ let
     }),
     
     // ===== ADD CALCULATED COLUMNS =====
+
     AddCapabilityOwner = Table.AddColumn(TypedConfig, "CapabilityOwner", each
-        switch [CapabilityKey]
-            case "DQ" then "Data Quality Team Lead"
-            case "DE" then "Data Engineering Manager"
-            case "CC" then "Change Control Board"
-            case "RD" then "Data Architecture Team"
-            case "RM" then "Information Governance"
-            otherwise "TBD"
+        if      [CapabilityKey]="DQ" then "Data Quality Team Lead"
+        else if [CapabilityKey]="DE" then "Data Engineering Manager"
+        else if [CapabilityKey]="CC" then "Change Control Board"
+        else if [CapabilityKey]="RD" then "Data Architecture Team"
+        else if [CapabilityKey]="RM" then "Information Governance"
+        else "TBD"
     ),
     
     AddBusinessDomain = Table.AddColumn(AddCapabilityOwner, "BusinessDomain", each
-        switch [CapabilityKey]
-            case "DQ" then "Data Management"
-            case "DE" then "Data Engineering"
-            case "CC" then "IT Operations"
-            case "RD" then "Data Architecture"
-            case "RM" then "Compliance"
-            otherwise "General"
+        if      [CapabilityKey]="DQ" then "Data Management"
+        else if [CapabilityKey]="DE" then "Data Engineering"
+        else if [CapabilityKey]="CC" then "IT Operations"
+        else if [CapabilityKey]="RD" then "Data Architecture"
+        else if [CapabilityKey]="RM" then "Compliance"
+        else "General"
     ),
-    
+
     AddMaturityLevel = Table.AddColumn(AddBusinessDomain, "MaturityLevel", each
-        switch [CapabilityKey]
-            case "DQ" then "Advanced"
-            case "DE" then "Intermediate"
-            case "CC" then "Advanced"
-            case "RD" then "Intermediate"
-            case "RM" then "Basic"
-            otherwise "Basic"
+        if      [CapabilityKey]="DQ" then "Advanced"
+        else if [CapabilityKey]="DE" then "Intermediate"
+        else if [CapabilityKey]="CC" then "Advanced"
+        else if [CapabilityKey]="RD" then "Intermediate"
+        else if [CapabilityKey]="RM" then "Basic"
+        else "Basic"
     ),
     
     // ===== ADD METADATA =====
@@ -490,14 +479,12 @@ let
     )
 in
     ValidateTargets
-```
-
-### 5. Dim_Status
-```m
+5. Dim_Status
+m
 let
     // ===== STATIC STATUS DEFINITIONS =====
     Source = #table(
-        {"Status", "StatusCategory", "StatusOrder", "IncludeInLeadTime", "IncludeInCycleTime", "IncludeInResponseTime"},
+        {"status", "StatusCategory", "StatusOrder", "IncludeInLeadTime", "IncludeInCycleTime", "IncludeInResponseTime"},
         {
             {"Backlog", "To Do", 1, true, false, false},
             {"New", "To Do", 2, true, false, false},
@@ -547,7 +534,7 @@ let
     
     // ===== DATA TYPES =====
     TypedStatuses = Table.TransformColumnTypes(AddIsActive, {
-        {"Status", type text},
+        {"status", type text},
         {"StatusCategory", type text},
         {"StatusOrder", Int64.Type},
         {"IncludeInLeadTime", type logical},
@@ -562,14 +549,9 @@ let
     })
 in
     TypedStatuses
-```
-
----
-
-## Configuration Tables
-
-### 6. Config_Issue_Type_Mapping
-```m
+Configuration Tables
+6. Config_Issue_Type_Mapping
+m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -579,7 +561,7 @@ let
     
     // Option B: Static table for testing
     // Source = #table(
-    //     {"IssueType", "CapabilityKey", "Notes"},
+    //     {"issue_type", "CapabilityKey", "Notes"},
     //     {
     //         {"Bug", "DQ", "Data quality defects"},
     //         {"Data Quality Task", "DQ", "Ongoing monitoring tasks"},
@@ -603,7 +585,7 @@ let
     
     // ===== DATA TYPES =====
     TypedMapping = Table.TransformColumnTypes(FilterActive, {
-        {"IssueType", type text},
+        {"issue_type", type text},
         {"CapabilityKey", type text},
         {"Notes", type text},
         {"IsActive", type logical}
@@ -616,9 +598,9 @@ let
     
     // ===== VALIDATION RULES =====
     ValidateMappings = Table.SelectRows(AddCreatedBy, each 
-        [IssueType] <> null and 
+        [issue_type] <> null and 
         [CapabilityKey] <> null and
-        Text.Length([IssueType]) > 0 and
+        Text.Length([issue_type]) > 0 and
         Text.Length([CapabilityKey]) > 0
     ),
     
@@ -630,10 +612,8 @@ let
     })
 in
     FinalTypes
-```
-
-### 7. Default_SLA_Table
-```m
+7. Default_SLA_Table
+m
 let
     // ===== STATIC SLA DEFINITIONS =====
     Source = #table(
@@ -698,14 +678,9 @@ let
     })
 in
     TypedTable
-```
-
----
-
-## Helper Functions
-
-### 8. Business Hours Calculation Function
-```m
+Helper Functions
+8. Business Hours Calculation Function
+m
 let
     BusinessHoursFunction = (StartTime as datetime, EndTime as datetime) =>
         let
@@ -750,30 +725,22 @@ let
             Number.Max(BusinessHours, 0)
 in
     BusinessHoursFunction
-```
-
----
-
-## Implementation Notes
-
-### Key Simplifications Made:
-1. **Removed Complexity**: Eliminated service-specific SLA overrides, priority adjustments, and complex reopening analysis
-2. **Streamlined SLA Logic**: Simplified to 2-tier hierarchy (Capability → Default fallback)
-3. **Focus on Core KPIs**: All queries optimized to support only the 6 essential performance indicators
-4. **Improved Maintainability**: Reduced relationships and calculations for easier maintenance
-
-### Relationship Requirements:
-- **Fact_Ticket_Summary[TicketKey] ↔ Fact_Status_Change[TicketKey]** (1:Many)
-- **Fact_Ticket_Summary[CreatedDate] ↔ Dim_Date[Date]** (Many:1, Active)
-- **Fact_Ticket_Summary[ResolvedDate] ↔ Dim_Date[Date]** (Many:1, Inactive)
-- **Fact_Ticket_Summary[IssueType] ↔ Config_Issue_Type_Mapping[IssueType]** (Many:1)
-- **Config_Issue_Type_Mapping[CapabilityKey] ↔ Dim_Capability[CapabilityKey]** (Many:1)
-
-### Data Quality Validations:
-- Resolution times are non-negative
-- Resolved tickets have resolution dates
-- SLA targets are within reasonable ranges (0-30 days)
-- Business day calculations exclude weekends and holidays
-- All mappings have required fields populated
-
+Implementation Notes
+Key Simplifications Made:
+Removed Complexity: Eliminated service-specific SLA overrides, priority adjustments, and complex reopening analysis
+Streamlined SLA Logic: Simplified to 2-tier hierarchy (Capability → Default fallback)
+Focus on Core KPIs: All queries optimized to support only the 6 essential performance indicators
+Improved Maintainability: Reduced relationships and calculations for easier maintenance
+Relationship Requirements:
+Fact_Ticket_Summary[key] ↔ Fact_Status_Change[key] (1:Many)
+Fact_Ticket_Summary[CreatedDate] ↔ Dim_Date[Date] (Many:1, Active)
+Fact_Ticket_Summary[ResolvedDate] ↔ Dim_Date[Date] (Many:1, Inactive)
+Fact_Ticket_Summary[issue_type] ↔ Config_Issue_Type_Mapping[issue_type] (Many:1)
+Config_Issue_Type_Mapping[CapabilityKey] ↔ Dim_Capability[CapabilityKey] (Many:1)
+Data Quality Validations:
+Resolution times are non-negative
+Resolved tickets have resolution dates
+SLA targets are within reasonable ranges (0-30 days)
+Business day calculations exclude weekends and holidays
+All mappings have required fields populated
 This simplified implementation provides comprehensive support for essential SLO tracking while dramatically reducing complexity and maintenance overhead.
