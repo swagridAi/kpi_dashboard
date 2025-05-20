@@ -1,0 +1,16 @@
+IssueType,CapabilityKey,Notes,IsActive
+Bug,DQ,Data quality defects and corrections,TRUE
+Data Quality Task,DQ,Ongoing data quality monitoring and maintenance,TRUE
+Task,DQ,General data quality tasks,TRUE
+Extract Request,DE,Custom and standard data extractions,TRUE
+Scheduled Extract,DE,Automated extract maintenance and updates,TRUE
+Story,DE,Data engineering user stories and features,TRUE
+Change Request,CC,Standard change approval and implementation,TRUE
+Emergency Change,CC,Urgent system changes requiring fast approval,TRUE
+Epic,CC,Large change control projects and initiatives,TRUE
+Reference Data Update,RD,Reference data maintenance and updates,TRUE
+Data Classification,RD,Data classification and categorization tasks,TRUE
+Records Request,RM,Records retrieval and access requests,TRUE
+Records Retention,RM,Records archival and retention processes,TRUE
+Incident,DQ,Production incidents affecting data quality,TRUE
+Service Request,DE,Standard data engineering service requests,TRUE

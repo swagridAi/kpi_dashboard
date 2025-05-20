@@ -1,0 +1,16 @@
+TicketType,SLA_Days,ExcludeWeekends,Notes,IsActive
+Bug,3.0,True,Critical defects require faster response,True
+Task,5.0,True,Standard business day response target,True
+Story,7.0,True,User stories standard processing time,True
+Epic,10.0,True,Large initiatives allow longer response time,True
+Sub-task,2.0,True,Sub-tasks inherit parent priority but faster turnaround,True
+Improvement,7.0,True,Enhancement requests standard timeline,True
+New Feature,15.0,True,New features require extended analysis time,True
+Change Request,10.0,True,Change management standard process,True
+Incident,1.0,False,Production incidents have highest priority - 24/7,True
+Service Request,5.0,True,Standard service delivery timeframe,True
+Data Quality Task,3.0,True,Data quality work requires prompt attention,True
+Extract Request,5.0,True,Data extraction requests standard timeline,True
+Emergency Change,0.5,False,Emergency changes require immediate attention,True
+Reference Data Update,4.0,True,Reference data updates standard process,True
+Records Request,3.0,True,Records management requests standard handling,True
