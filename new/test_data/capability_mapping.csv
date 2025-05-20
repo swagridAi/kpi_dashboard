@@ -1,0 +1,5 @@
+CapabilityKey,IssueType,EpicName,Project,Notes,IsActive
+DQ,Bug,Cleanup,ABC,,True
+DE,Task,Migration,ABC,,True
+CC,Story,Release,XYZ,,True
+DQ,Bug,Cleanup,XYZ,,True

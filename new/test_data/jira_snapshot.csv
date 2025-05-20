@@ -1,0 +1,5 @@
+key,issue_type,epic_name,status,created,updated
+ABC-001,Bug,Cleanup,Open,2024-01-01,2024-01-04
+ABC-002,Task,Migration,In Progress,2024-01-03,2024-01-10
+XYZ-101,Story,Release,Done,2024-01-05,2024-01-15
+XYZ-102,Bug,Cleanup,Closed,2024-01-10,2024-01-12

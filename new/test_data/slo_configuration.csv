@@ -1,0 +1,6 @@
+CapabilityKey,CapabilityName,LeadTimeTargetDays,CycleTimeTargetDays,ResponseTimeTargetDays,IsActive
+DQ,Data Quality,1.0,2,3,True
+DE,Data Engineering,1.5,3,5,True
+CC,Change Controls,2.0,5,7,True
+RD,Reference Data,1.0,3,4,True
+RM,Records Management,2.0,3,5,True

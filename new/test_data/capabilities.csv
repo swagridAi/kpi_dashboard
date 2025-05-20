@@ -1,6 +1,0 @@
-CapabilityKey,CapabilityName,ResponseTimeTargetDays,CapabilityOwner,BusinessDomain,IsActive
-DQ,Data Quality,3,Data Quality Team Lead,Data Management,True
-DE,Data Extracts,5,Data Engineering Manager,Data Engineering,True
-CC,Change Controls,7,Change Control Board,IT Operations,True
-RD,Reference Data,4,Data Architecture Team,Data Architecture,True
-RM,Records Management,6,Information Governance,Compliance,True

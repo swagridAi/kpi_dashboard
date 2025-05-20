@@ -32,7 +32,7 @@ VAR SLA_Target =
         -- Capability-level SLA
         CALCULATE(
             MAX(Dim_Capability[ResponseTimeTargetDays]),
-            Config_Issue_Type_Capability_Mapping[issue_type] = IssueType
+            Config_Issue_Type_Mapping[issue_type] = IssueType
         ),
         
         -- Default SLA fallback
@@ -61,7 +61,7 @@ VAR SLA_Target =
             RELATED(Dim_Capability[ResponseTimeTargetDays]),
             USERELATIONSHIP(
                 Fact_Ticket_Summary[issue_type], 
-                Config_Issue_Type_Capability_Mapping[issue_type]
+                Config_Issue_Type_Mapping[issue_type]
             )
         ),
         
@@ -88,17 +88,17 @@ RETURN
 dax
 Lead_Time_Days = 
 CALCULATE(
-    AVERAGE(Fact_Ticket_Status_Change[DurationBusinessHours]),
-    Fact_Ticket_Status_Change[IsLeadTimeStart] = TRUE
+    AVERAGE(Fact_Status_Change[DurationBusinessHours]),
+    Fact_Status_Change[IsLeadTimeStart] = TRUE
 ) / 24
 5. Cycle Time (KPI #2)
 dax
 Cycle_Time_Days = 
 VAR CycleTimeTickets = 
     SUMMARIZE(
-        FILTER(Fact_Ticket_Status_Change, [IsCycleTimeStart] = TRUE),
+        FILTER(Fact_Status_Change, [IsCycleTimeStart] = TRUE),
         [key],
-        "CycleTime", SUM(Fact_Ticket_Status_Change[DurationBusinessHours])
+        "CycleTime", SUM(Fact_Status_Change[DurationBusinessHours])
     )
 RETURN AVERAGEX(CycleTimeTickets, [CycleTime]) / 24
 6. Response Time (KPI #3)
@@ -229,7 +229,7 @@ CALCULATE(
     [SLO_Achievement_Rate],
     USERELATIONSHIP(
         Fact_Ticket_Summary[issue_type], 
-        Config_Issue_Type_Capability_Mapping[issue_type]
+        Config_Issue_Type_Mapping[issue_type]
     )
 )
 21. Total Tickets by Capability
@@ -239,7 +239,7 @@ CALCULATE(
     COUNTROWS(Fact_Ticket_Summary),
     USERELATIONSHIP(
         Fact_Ticket_Summary[issue_type], 
-        Config_Issue_Type_Capability_Mapping[issue_type]
+        Config_Issue_Type_Mapping[issue_type]
     )
 )
 22. Capability Throughput
@@ -249,7 +249,7 @@ CALCULATE(
     [Throughput_KPI],
     USERELATIONSHIP(
         Fact_Ticket_Summary[issue_type], 
-        Config_Issue_Type_Capability_Mapping[issue_type]
+        Config_Issue_Type_Mapping[issue_type]
     )
 )
 Trend Analysis Measures
@@ -374,7 +374,7 @@ Simple Calculated Columns
 31. CapabilityKey (Calculated Column)
 dax
 CapabilityKey = 
-RELATED(Config_Issue_Type_Capability_Mapping[CapabilityKey])
+RELATED(Config_Issue_Type_Mapping[CapabilityKey])
 
 32. Days_In_Current_Status (Calculated Column)
 dax
@@ -436,9 +436,9 @@ Simplified Architecture:
 
 Key Relationships:
 - Fact_Ticket_Summary ↔ Dim_Date (created/resolved)
-- Fact_Ticket_Summary ↔ Config_Issue_Type_Capability_Mapping
-- Config_Issue_Type_Capability_Mapping ↔ Dim_Capability
-- Fact_Ticket_Status_Change ↔ Fact_Ticket_Summary
+- Fact_Ticket_Summary ↔ Config_Issue_Type_Mapping
+- Config_Issue_Type_Mapping ↔ Dim_Capability
+- Fact_Status_Change ↔ Fact_Ticket_Summary
 
 Enhanced Capability Access:
 - The CapabilityKey calculated column provides direct access to the capability
