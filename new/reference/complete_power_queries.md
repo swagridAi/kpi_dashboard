@@ -1,18 +1,23 @@
-Complete Power Query (M) Code for Essential SLO Dashboard
-Overview
+# Complete Power Query (M) Code for Essential SLO Dashboard
+
+## Overview
+
 This document provides complete Power Query (M) code for implementing a streamlined SLO Dashboard focused on 6 core KPIs for essential service performance tracking. The simplified model eliminates complex analytics while maintaining comprehensive coverage of time, volume, and quality dimensions.
 
-Supported Core KPIs:
+**Supported Core KPIs:**
+1. **Lead Time** - Creation to work start (business days)
+2. **Cycle Time** - Work start to completion (business days)
+3. **Response Time** - End-to-end resolution (business days)
+4. **Throughput** - Tickets completed per period
+5. **Service Quality** - SLO achievement percentage
+6. **Issue Resolution Time** - Average resolution time
 
-Lead Time - Creation to work start (business days)
-Cycle Time - Work start to completion (business days)
-Response Time - End-to-end resolution (business days)
-Throughput - Tickets completed per period
-Service Quality - SLO achievement percentage
-Issue Resolution Time - Average resolution time
-Core Fact Tables
-1. Fact_Ticket_Summary
-m
+---
+
+## Core Fact Tables
+
+### 1. Fact_Ticket_Summary
+```m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -147,8 +152,10 @@ let
     })
 in
     FinalTypes
-2. Fact_Status_Change
-m
+```
+
+### 2. Fact_Status_Change
+```m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -292,9 +299,14 @@ let
     })
 in
     FinalTypes
-Essential Dimensions
-3. Dim_Date
-m
+```
+
+---
+
+## Essential Dimensions
+
+### 3. Dim_Date
+```m
 let
     // ===== GENERATE DATE RANGE =====
     StartDate = #date(2023, 1, 1),
@@ -398,8 +410,10 @@ let
     })
 in
     TypedTable
-4. Dim_Capability
-m
+```
+
+### 4. Dim_Capability
+```m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -479,8 +493,10 @@ let
     )
 in
     ValidateTargets
-5. Dim_Status
-m
+```
+
+### 5. Dim_Status
+```m
 let
     // ===== STATIC STATUS DEFINITIONS =====
     Source = #table(
@@ -549,9 +565,14 @@ let
     })
 in
     TypedStatuses
-Configuration Tables
-6. Config_Issue_Type_Mapping
-m
+```
+
+---
+
+## Configuration Tables
+
+### 6. Config_Issue_Type_Mapping
+```m
 let
     // ===== DATA SOURCE OPTIONS =====
     // Option A: Excel File
@@ -612,8 +633,10 @@ let
     })
 in
     FinalTypes
-7. Default_SLA_Table
-m
+```
+
+### 7. Default_SLA_Table
+```m
 let
     // ===== STATIC SLA DEFINITIONS =====
     Source = #table(
@@ -678,9 +701,14 @@ let
     })
 in
     TypedTable
-Helper Functions
-8. Business Hours Calculation Function
-m
+```
+
+---
+
+## Helper Functions
+
+### 8. Business Hours Calculation Function
+```m
 let
     BusinessHoursFunction = (StartTime as datetime, EndTime as datetime) =>
         let
@@ -725,22 +753,30 @@ let
             Number.Max(BusinessHours, 0)
 in
     BusinessHoursFunction
-Implementation Notes
-Key Simplifications Made:
-Removed Complexity: Eliminated service-specific SLA overrides, priority adjustments, and complex reopening analysis
-Streamlined SLA Logic: Simplified to 2-tier hierarchy (Capability → Default fallback)
-Focus on Core KPIs: All queries optimized to support only the 6 essential performance indicators
-Improved Maintainability: Reduced relationships and calculations for easier maintenance
-Relationship Requirements:
-Fact_Ticket_Summary[key] ↔ Fact_Status_Change[key] (1:Many)
-Fact_Ticket_Summary[CreatedDate] ↔ Dim_Date[Date] (Many:1, Active)
-Fact_Ticket_Summary[ResolvedDate] ↔ Dim_Date[Date] (Many:1, Inactive)
-Fact_Ticket_Summary[issue_type] ↔ Config_Issue_Type_Mapping[issue_type] (Many:1)
-Config_Issue_Type_Mapping[CapabilityKey] ↔ Dim_Capability[CapabilityKey] (Many:1)
-Data Quality Validations:
-Resolution times are non-negative
-Resolved tickets have resolution dates
-SLA targets are within reasonable ranges (0-30 days)
-Business day calculations exclude weekends and holidays
-All mappings have required fields populated
+```
+
+---
+
+## Implementation Notes
+
+### Key Simplifications Made:
+1. **Removed Complexity**: Eliminated service-specific SLA overrides, priority adjustments, and complex reopening analysis
+2. **Streamlined SLA Logic**: Simplified to 2-tier hierarchy (Capability → Default fallback)
+3. **Focus on Core KPIs**: All queries optimized to support only the 6 essential performance indicators
+4. **Improved Maintainability**: Reduced relationships and calculations for easier maintenance
+
+### Relationship Requirements:
+- **Fact_Ticket_Summary[key] ↔ Fact_Status_Change[key]** (1:Many)
+- **Fact_Ticket_Summary[CreatedDate] ↔ Dim_Date[Date]** (Many:1, Active)
+- **Fact_Ticket_Summary[ResolvedDate] ↔ Dim_Date[Date]** (Many:1, Inactive)
+- **Fact_Ticket_Summary[issue_type] ↔ Config_Issue_Type_Mapping[issue_type]** (Many:1)
+- **Config_Issue_Type_Mapping[CapabilityKey] ↔ Dim_Capability[CapabilityKey]** (Many:1)
+
+### Data Quality Validations:
+- Resolution times are non-negative
+- Resolved tickets have resolution dates
+- SLA targets are within reasonable ranges (0-30 days)
+- Business day calculations exclude weekends and holidays
+- All mappings have required fields populated
+
 This simplified implementation provides comprehensive support for essential SLO tracking while dramatically reducing complexity and maintenance overhead.
