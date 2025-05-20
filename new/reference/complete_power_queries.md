@@ -19,24 +19,13 @@ This document provides complete Power Query (M) code for implementing a streamli
 ### 1. Fact_Ticket_Summary
 ```m
 let
-    // ===== DATA SOURCE OPTIONS =====
-    // Option A: Excel File
-    Source = Excel.Workbook(File.Contents("C:\SLOData\ticket_summary.xlsx"), null, true),
-    Sheet = Source{[Item="TicketData",Kind="Sheet"]}[Data],
-    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars=true]),
+    // ===== DATA SOURCE REFERENCE =====
+    // Replace file source with reference to existing Jira_Snapshot query
+    Source = Jira_Snapshot,
     
-    // Option B: CSV File (alternative)
-    // Source = Csv.Document(File.Contents("C:\SLOData\ticket_summary.csv"),[Delimiter=",", Encoding=1252]),
-    // PromotedHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
-    
-    // Option C: SharePoint List (alternative)
-    // Source = SharePoint.Tables("https://company.sharepoint.com/sites/SLOData"),
-    // TicketList = Source{[Name="TicketSummary"]}[Items],
-    // PromotedHeaders = TicketList,
-    
-    // ===== DATA CLEANING =====
-    // Remove rows with missing key data
-    FilterActive = Table.SelectRows(PromotedHeaders, each 
+    // ===== DATA FILTERING =====
+    // Remove rows with missing key data (same logic as original)
+    FilterActive = Table.SelectRows(Source, each 
         [active] = true and 
         [key] <> null and 
         [created] <> null
@@ -54,9 +43,29 @@ let
         {"summary", type text},
         {"active", type logical}
     }),
+
+    // ===== ADD PROJECT CODE =====
+    // Extract project code from ticket key if not already present
+    AddProject = if Table.HasColumns(TypedTable, "project") then TypedTable 
+                 else Table.AddColumn(TypedTable, "project", each 
+                      try Text.Start([key], Text.PositionOf([key], "-")) otherwise null),
+    
+    // ===== NORMALIZED COLUMNS FOR MATCHING =====
+    // Normalize text fields for case-insensitive joins
+    AddNormalizedIssueType = Table.AddColumn(AddProject, "normalized_issue_type", each
+        try Text.Lower(Text.Trim([issue_type])) otherwise null),
+        
+    AddNormalizedProject = Table.AddColumn(AddNormalizedIssueType, "normalized_project", each
+        try Text.Lower(Text.Trim([project])) otherwise null),
+    
+    AddNormalizedEpicName = if Table.HasColumns(AddNormalizedProject, "epic_name") then
+        Table.AddColumn(AddNormalizedProject, "normalized_epic_name", each
+            try Text.Lower(Text.Trim([epic_name])) otherwise null)
+    else
+        AddNormalizedProject,
     
     // ===== CALCULATED DATE COLUMNS =====
-    AddCreatedDate = Table.AddColumn(TypedTable, "CreatedDate", each Date.From([created])),
+    AddCreatedDate = Table.AddColumn(AddNormalizedEpicName, "CreatedDate", each Date.From([created])),
     AddResolvedDate = Table.AddColumn(AddCreatedDate, "ResolvedDate", each 
         if [resolution_date] <> null then Date.From([resolution_date]) else null),
     AddUpdatedDate = Table.AddColumn(AddResolvedDate, "UpdatedDate", each Date.From([updated])),
@@ -79,10 +88,16 @@ let
             List.Contains(CompletedStatuses, [status])
     ),
     
-    // ===== SLA TARGET CALCULATION (SIMPLIFIED 2-TIER HIERARCHY) =====
+    // ===== CAPABILITY MAPPING =====
+    // Create match key for capability mapping
+    AddMatchKey = Table.AddColumn(AddIsCompleted, "MatchKey", each [normalized_issue_type]),
+    
+    // Get active capability mappings 
+    CapabilityMappingActive = Table.SelectRows(Config_Issue_Type_Capability_Mapping, each [IsActive] = true),
+    
     // Join with capability mapping to get capability-level SLA
-    JoinCapabilityMapping = Table.NestedJoin(AddIsCompleted, {"issue_type"}, 
-        Config_Issue_Type_Capability_Mapping, {"issue_type"}, "CapabilityMapping", JoinKind.LeftOuter),
+    JoinCapabilityMapping = Table.NestedJoin(AddMatchKey, {"issue_type"}, 
+        CapabilityMappingActive, {"issue_type"}, "CapabilityMapping", JoinKind.LeftOuter),
     ExpandCapabilityMapping = Table.ExpandTableColumn(JoinCapabilityMapping, "CapabilityMapping", 
         {"CapabilityKey"}, {"MappedCapabilityKey"}),
     
@@ -91,6 +106,7 @@ let
         [MappedCapabilityKey]
     ),
     
+    // ===== SLA TARGET CALCULATION (2-TIER HIERARCHY) =====
     // Join with capability to get SLA targets
     JoinCapability = Table.NestedJoin(AddFinalCapabilityKey, {"FinalCapabilityKey"}, 
         Dim_Capability, {"CapabilityKey"}, "CapabilityData", JoinKind.LeftOuter),
@@ -139,7 +155,8 @@ let
     
     // ===== REMOVE HELPER COLUMNS =====
     RemoveHelpers = Table.RemoveColumns(ValidateData, 
-        {"CapabilityMapping", "MappedCapabilityKey", "CapabilityData", "DefaultSLA", 
+        {"normalized_issue_type", "normalized_project", "normalized_epic_name", "MatchKey", 
+         "CapabilityMapping", "MappedCapabilityKey", "CapabilityData", "DefaultSLA", 
          "CapabilityResponseTimeTarget", "DefaultSLADays"}),
     
     // ===== FINAL TYPE OPTIMIZATION =====
