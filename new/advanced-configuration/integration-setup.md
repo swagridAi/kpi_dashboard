@@ -1,13 +1,8 @@
-# Integration Setup Guide
-
-## Integration Architecture
-
-The SLO Dashboard system integrates with multiple Microsoft 365 and third-party systems to provide seamless configuration management, automated distribution, and comprehensive monitoring capabilities.
-
-### Core Integration Points
-
-```mermaid
-graph TD
+Integration Setup Guide
+Integration Architecture
+The SLO Dashboard system integrates with Microsoft 365 and third-party systems to provide streamlined configuration management, automated distribution, and essential performance monitoring focused on six core KPIs.
+Core Integration Points
+mermaidgraph TD
     subgraph "Configuration Sources"
         CF[Confluence Pages]
         SP[SharePoint Lists]
@@ -37,51 +32,48 @@ graph TD
     PAF --> TM
     PBI --> MB
     PBI --> WB
-```
+Simplified Integration Data Flow
 
-### Integration Data Flow
+Source Systems: Jira provides ticket data; Confluence manages capability-level configurations
+Orchestration Layer: Power Automate manages simplified data synchronization
+Data Processing: Power BI calculates 6 core KPIs (Lead Time, Cycle Time, Response Time, Throughput, Service Quality, Issue Resolution Time)
+Distribution Layer: Multiple channels deliver essential insights and alerts to stakeholders
 
-1. **Source Systems**: Jira, Confluence, Git repositories provide raw data and configuration
-2. **Orchestration Layer**: Power Automate manages data synchronization and transformations
-3. **Data Processing**: Power BI processes tickets and applies configured business rules
-4. **Distribution Layer**: Multiple channels deliver insights and alerts to stakeholders
+Key Simplifications
 
----
+No service-specific overrides: SLA targets managed at capability level only
+No individual performance tracking: Focus on team-level metrics
+No priority adjustments: Standard SLA targets apply to all ticket types
+Simplified hierarchy: Capability SLA targets with organizational defaults as fallback
 
-## Database Integration
 
-### Jira Data Connection
-
-**SQL Server Connection Setup**
-```yaml
-DATABASE_CONFIG:
+Database Integration
+Jira Data Connection
+SQL Server Connection Setup
+yamlDATABASE_CONFIG:
   server: "sql-server.company.com"
   database: "jira_datawarehouse"
   authentication: "integrated_security"
   connection_timeout: 30
   command_timeout: 300
-```
+Simplified Tables and Refresh Strategy:
 
-**Key Tables and Refresh Strategy**:
-- **jira_snapshot**: Current ticket state (nightly full refresh)
-- **jira_changelog**: Status change history (incremental refresh)
-- **Refresh Schedule**: 2:00 AM UTC daily with retry logic
+jira_snapshot: Current ticket state (nightly full refresh)
+jira_changelog: Basic status change history (incremental refresh)
+Refresh Schedule: 2:00 AM UTC daily with retry logic
 
-**Connection Security**:
-- Service account with read-only permissions
-- Encrypted connections (TLS 1.2 minimum)
-- IP whitelisting for Power BI service
-- Connection monitoring and automatic failover
+Connection Security:
 
----
+Service account with read-only permissions
+Encrypted connections (TLS 1.2 minimum)
+IP whitelisting for Power BI service
+Connection monitoring and automatic failover
 
-## Confluence Integration
 
-### Configuration Synchronization
-
-**REST API Configuration**
-```json
-{
+Confluence Integration
+Configuration Synchronization
+REST API Configuration
+json{
   "confluence_api": {
     "base_url": "https://company.atlassian.net/wiki",
     "auth_type": "api_token",
@@ -97,80 +89,78 @@ DATABASE_CONFIG:
     ]
   }
 }
-```
+Simplified Synchronization Process:
 
-**Synchronization Process**:
-1. **Change Detection**: Query Confluence API for page modifications since last sync
-2. **Content Extraction**: Parse structured tables from modified pages
-3. **Validation**: Apply business rules and data quality checks
-4. **Transformation**: Convert to Power BI configuration format
-5. **Loading**: Update Power BI data model with new configurations
-6. **Verification**: Validate successful sync and notify stakeholders
+Change Detection: Query Confluence API for page modifications since last sync
+Content Extraction: Parse capability-level SLO targets and issue type mappings only
+Validation: Apply simplified business rules for 6 core KPIs
+Transformation: Convert to Power BI configuration format
+Loading: Update Power BI data model with capability configurations
+Verification: Validate successful sync and notify stakeholders
 
-**Page Structure Requirements**:
-- Standardized table headers for SLO targets, issue mappings, status rules
-- Metadata tracking (last modified, version, approver)
-- Change comments explaining business justification
+Simplified Page Structure Requirements:
 
-### Change Tracking Integration
+SLO Targets Table: Lead Time, Cycle Time, Response Time targets only
+Issue Type Mapping Table: Issue Type → Capability mapping only
+Basic Metadata: Last modified, version, approver
+Change Comments: Business justification for target changes
 
-**Audit Trail Features**:
-- Real-time change detection via webhook subscriptions
-- Complete version history with before/after comparisons
-- User attribution for all modifications
-- Rollback capabilities to previous configurations
+Change Tracking Integration
+Basic Audit Trail Features:
 
----
+Real-time change detection via webhook subscriptions
+Version history with before/after SLO targets
+User attribution for all modifications
+Rollback capabilities to previous configurations
 
-## Git Integration
 
-### Version Control Setup
-
-**Repository Configuration**
-```yaml
-GIT_INTEGRATION:
+Git Integration
+Version Control Setup
+Repository Configuration
+yamlGIT_INTEGRATION:
   repository_url: "https://github.com/company/slo-dashboard-config.git"
   branch: "main"
   sync_path: "/capabilities/"
   auth_method: "personal_access_token"
   webhook_secret: "[WEBHOOK_SECRET]"
-```
-
-**File Structure**:
-```
+Simplified File Structure:
 /capabilities/
 ├── data-quality/
 │   ├── slo-targets.yml
-│   ├── issue-mappings.yml
-│   └── status-rules.yml
+│   └── issue-mappings.yml
 ├── data-extracts/
-│   └── [similar structure]
+│   ├── slo-targets.yml
+│   └── issue-mappings.yml
+├── change-controls/
+│   ├── slo-targets.yml
+│   └── issue-mappings.yml
+├── reference-data/
+│   ├── slo-targets.yml
+│   └── issue-mappings.yml
+├── records-management/
+│   ├── slo-targets.yml
+│   └── issue-mappings.yml
 └── global/
-    ├── default-sla.yml
-    └── system-settings.yml
-```
+    └── default-sla.yml
+Integration Features:
 
-**Integration Features**:
-- **Automated Sync**: Webhook triggers immediate sync on repository changes
-- **Pull Request Integration**: Configuration changes via PR approval process
-- **Conflict Resolution**: Merge conflict detection and resolution procedures
-- **Branch Protection**: Main branch protection with required reviews
+Automated Sync: Webhook triggers immediate sync on repository changes
+Pull Request Integration: Configuration changes via PR approval process
+Conflict Resolution: Simple merge conflict detection and resolution
+Branch Protection: Main branch protection with required reviews
 
----
 
-## Power Automate Integration
+Power Automate Integration
+Simplified Workflow Orchestration
+Core Flows:
 
-### Workflow Orchestration
+Configuration Sync Flow: Confluence → Power BI capability-level synchronization
+Alert Distribution Flow: Core KPI breach → Multi-channel notifications
+Report Generation Flow: Automated monthly 6-KPI performance reports
+Data Quality Flow: Basic validation for incoming ticket data
 
-**Core Flows**:
-1. **Configuration Sync Flow**: Confluence → Power BI synchronization
-2. **Alert Distribution Flow**: SLO breach → Multi-channel notifications  
-3. **Report Generation Flow**: Automated monthly report creation and distribution
-4. **Data Quality Flow**: Validation and error handling for incoming data
-
-**Example Flow Configuration**:
-```json
-{
+Example Simplified Flow Configuration:
+json{
   "flow_name": "SLO_Configuration_Sync",
   "trigger": {
     "type": "recurrence",
@@ -183,29 +173,23 @@ GIT_INTEGRATION:
       "parameters": {"space": "SLO", "limit": 100}
     },
     {
-      "condition": "changes_detected",
-      "true_actions": ["extract_config", "validate_config", "update_powerbi"],
+      "condition": "capability_config_changed",
+      "true_actions": ["extract_slo_targets", "validate_core_kpis", "update_powerbi"],
       "false_actions": ["log_no_changes"]
     }
   ]
 }
-```
+Simplified Error Handling:
 
-**Error Handling and Retry Logic**:
-- Automatic retry with exponential backoff
-- Dead letter queue for failed operations
-- Administrator notifications for persistent failures
-- Manual intervention triggers for complex issues
+Basic retry with exponential backoff
+Administrator notifications for sync failures
+Simple manual intervention triggers
 
----
 
-## Email and Teams Integration
-
-### SMTP Configuration
-
-**Email Service Setup**
-```yaml
-EMAIL_CONFIG:
+Email and Teams Integration
+SMTP Configuration
+Email Service Setup
+yamlEMAIL_CONFIG:
   smtp_server: "smtp.office365.com"
   port: 587
   encryption: "STARTTLS"
@@ -214,48 +198,38 @@ EMAIL_CONFIG:
     tenant_id: "[AZURE_TENANT_ID]"
     client_id: "[EMAIL_APP_ID]"
     certificate_thumbprint: "[CERT_THUMBPRINT]"
-```
+Simplified Distribution Features:
 
-**Distribution Features**:
-- **Monthly Reports**: Automated capability performance summaries
-- **Alert Notifications**: Real-time SLO breach and risk alerts
-- **Custom Templates**: HTML email templates with embedded charts and metrics
-- **Delivery Tracking**: Read receipts, bounce handling, and engagement analytics
+Monthly Reports: Automated 6-KPI performance summaries
+Alert Notifications: Core SLO breach alerts only
+Basic Templates: HTML email templates with essential metrics charts
+Delivery Tracking: Basic bounce handling and delivery confirmation
 
-### Microsoft Teams Integration
-
-**Teams App Registration**
-```json
-{
+Microsoft Teams Integration
+Teams App Registration
+json{
   "teams_app": {
     "app_id": "[TEAMS_APP_ID]",
     "bot_id": "[BOT_ID]",
     "permissions": [
       "ChannelMessage.Send",
-      "Chat.ReadWrite",
-      "TeamsAppInstallation.ReadWriteForUser"
+      "Chat.ReadWrite"
     ],
-    "scopes": ["team", "personal"],
+    "scopes": ["team"],
     "webhook_url": "https://company.webhook.office.com/webhookb2/[WEBHOOK-ID]"
   }
 }
-```
+Integration Capabilities:
 
-**Integration Capabilities**:
-- **Channel Notifications**: Capability-specific alerts to designated Team channels
-- **Interactive Cards**: Actionable notifications with direct dashboard links
-- **Bot Commands**: `/slo status [capability]` for immediate SLO queries
-- **Workflow Integration**: Approval workflows within Teams channels
+Channel Notifications: Capability-specific alerts to designated Team channels
+Basic Cards: Simple notifications with dashboard links
+Bot Commands: /slo status [capability] for immediate core KPI queries
 
----
 
-## SharePoint Integration
-
-### Dashboard Embedding
-
-**Power BI Web Part Configuration**
-```javascript
-// SharePoint Framework web part settings
+SharePoint Integration
+Dashboard Embedding
+Power BI Web Part Configuration
+javascript// SharePoint Framework web part settings
 const embedConfig = {
   type: "report",
   id: "[REPORT_ID]",
@@ -271,30 +245,24 @@ const embedConfig = {
     }
   }
 };
-```
+Embedding Locations:
 
-**Embedding Locations**:
-- **Executive Portal**: `/sites/executive/SitePages/SLO-Overview.aspx`
-- **Capability Sites**: `/sites/[capability]/SitePages/Performance-Dashboard.aspx`
-- **Team Sites**: Embedded in capability team collaboration spaces
-- **Personal Dashboards**: My Sites integration with personalized views
+Executive Portal: /sites/executive/SitePages/SLO-Overview.aspx
+Capability Sites: /sites/[capability]/SitePages/Performance-Dashboard.aspx
+Team Sites: Embedded in capability team collaboration spaces
 
-### Document and Configuration Management
+Document and Configuration Management
+SharePoint List Integration:
 
-**SharePoint List Integration**:
-- **User Preferences**: Subscription settings, alert configurations
-- **Capability Registry**: Master list of all organizational capabilities
-- **Access Management**: Permission groups and security configurations
+User Preferences: Basic subscription settings and alert configurations
+Capability Registry: Master list of organizational capabilities only
+Access Management: Simplified permission groups
 
----
 
-## API Integration
-
-### Power BI REST API Setup
-
-**Authentication Configuration**
-```python
-# Service principal authentication
+API Integration
+Power BI REST API Setup
+Authentication Configuration
+python# Service principal authentication
 api_config = {
     'authority': 'https://login.microsoftonline.com/[TENANT_ID]',
     'client_id': '[SERVICE_PRINCIPAL_ID]',
@@ -302,35 +270,25 @@ api_config = {
     'scope': ['https://analysis.windows.net/powerbi/api/.default'],
     'api_base': 'https://api.powerbi.com/v1.0/myorg'
 }
-```
-
-**Key API Endpoints and Usage**:
-```python
-# Common API operations
+Core API Endpoints:
+python# Essential API operations only
 endpoints = {
     'trigger_refresh': 'POST /datasets/{datasetId}/refreshes',
     'get_refresh_history': 'GET /datasets/{datasetId}/refreshes',
     'export_report': 'POST /reports/{reportId}/ExportTo',
-    'get_report_users': 'GET /reports/{reportId}/users',
     'update_datasource': 'POST /datasets/{datasetId}/Default.UpdateDatasources'
 }
-```
+Rate Limiting and Best Practices:
 
-**Rate Limiting and Best Practices**:
-- **API Limits**: 200 requests/hour per user, 1000 requests/hour per app
-- **Retry Strategy**: Exponential backoff with jitter for failed requests
-- **Batching**: Group operations where possible to optimize API usage
-- **Monitoring**: Track API usage and performance metrics
+API Limits: 200 requests/hour per user, 1000 requests/hour per app
+Retry Strategy: Basic exponential backoff for failed requests
+Monitoring: Track API usage for core operations only
 
----
 
-## Security Configuration
-
-### Authentication and Authorization
-
-**Azure Active Directory Integration**
-```yaml
-SECURITY_CONFIG:
+Security Configuration
+Authentication and Authorization
+Azure Active Directory Integration
+yamlSECURITY_CONFIG:
   identity_provider: "Azure AD"
   tenant_id: "[AZURE_TENANT_ID]"
   authentication_methods:
@@ -348,39 +306,30 @@ SECURITY_CONFIG:
       access_level: "full_organization"
     - name: "SLO-Dashboard-Capability-Owners"  
       access_level: "capability_specific"
-```
-
-**Row-Level Security Implementation**:
-```dax
--- Capability-based RLS filter
+Simplified Row-Level Security Implementation:
+dax-- Capability-based RLS filter only
 [Capability RLS] = 
 VAR UserEmail = USERPRINCIPALNAME()
 VAR UserCapabilities = 
-    LOOKUPVALUE(
-        User_Capability_Mapping[CapabilityKeys],
-        User_Capability_Mapping[UserEmail], UserEmail
+    CALCULATETABLE(
+        VALUES(User_Capability_Mapping[CapabilityKey]),
+        User_Capability_Mapping[UserEmail] = UserEmail
     )
 RETURN
     [CapabilityKey] IN UserCapabilities
-```
+Network Security
+Network Configuration:
 
-### Network Security
+Firewall Rules: Restrict Power BI service IPs for database access
+VPN Requirements: Require VPN for administrative access
+SSL/TLS: Enforce HTTPS for all web communications
+Certificate Management: Automated certificate renewal and monitoring
 
-**Network Configuration**:
-- **Firewall Rules**: Restrict Power BI service IPs for database access
-- **VPN Requirements**: Require VPN for administrative access
-- **SSL/TLS**: Enforce HTTPS for all web communications
-- **Certificate Management**: Automated certificate renewal and monitoring
 
----
-
-## Monitoring and Health Checks
-
-### Integration Health Monitoring
-
-**Monitoring Dashboard Metrics**:
-```yaml
-HEALTH_METRICS:
+Monitoring and Health Checks
+Integration Health Monitoring
+Simplified Monitoring Metrics:
+yamlHEALTH_METRICS:
   database_connection:
     check_frequency: "5_minutes"
     timeout: "30_seconds"
@@ -391,132 +340,133 @@ HEALTH_METRICS:
     timeout: "60_seconds"
     alert_threshold: "2_consecutive_failures"
   
-  email_delivery:
+  core_kpi_calculation:
     check_frequency: "30_minutes"
     success_rate_threshold: "95_percent"
-    bounce_rate_threshold: "5_percent"
-```
+Automated Health Checks:
 
-**Automated Health Checks**:
-1. **Database Connectivity**: Query response time and connection status
-2. **API Availability**: Response time and success rates for all integrated APIs
-3. **Sync Status**: Last successful sync time and error rates
-4. **Report Generation**: End-to-end report creation and distribution timing
+Database Connectivity: Query response time and connection status
+API Availability: Response time and success rates for essential APIs
+Sync Status: Last successful configuration sync time and error rates
+Core KPI Generation: Six essential KPI calculation timing and accuracy
 
-### Alerting and Escalation
-
-**Alert Configuration**:
-```json
-{
+Alerting and Escalation
+Alert Configuration:
+json{
   "alert_channels": {
-    "critical": ["email", "teams", "sms"],
-    "warning": ["email", "teams"], 
+    "critical": ["email", "teams"],
+    "warning": ["email"], 
     "info": ["email"]
   },
   "escalation_policy": {
     "level_1": "slo_dashboard_admins",
-    "level_2": "it_operations_manager",
-    "level_3": "technology_director"
+    "level_2": "it_operations_manager"
   },
   "notification_thresholds": {
     "data_staleness": "6_hours",
     "sync_failure_rate": "10_percent",
-    "api_error_rate": "5_percent"
+    "kpi_calculation_failure": "5_percent"
   }
 }
-```
 
----
+Disaster Recovery and Backup
+Backup Strategy
+Simplified Configuration Backup:
 
-## Disaster Recovery and Backup
+Confluence: Daily automated export of capability configuration pages
+Power BI: Weekly backup of core dashboard and 6-KPI calculations
+SharePoint: Standard Microsoft 365 retention policies
+Git: Distributed version control provides inherent backup
 
-### Backup Strategy
+Recovery Procedures:
 
-**Configuration Backup**:
-- **Confluence**: Daily automated export of configuration pages
-- **Power BI**: Weekly backup of data model and report definitions  
-- **SharePoint**: Continuous backup via Microsoft 365 retention policies
-- **Git**: Distributed version control provides inherent backup
+Configuration Recovery: Restore from Git repository or Confluence export
+Data Recovery: Point-in-time restore from SQL Server backups
+Dashboard Recovery: Redeploy core KPI calculations from source control
 
-**Recovery Procedures**:
-1. **Configuration Recovery**: Restore from Git repository or Confluence export
-2. **Data Recovery**: Point-in-time restore from SQL Server backups
-3. **Report Recovery**: Redeploy from development environment with latest configurations
-4. **Integration Recovery**: Recreate connections using documented procedures
+Business Continuity Planning
+Service Level Objectives for Integrations:
 
-### Business Continuity Planning
+RTO (Recovery Time Objective): 4 hours for full service restoration
+RPO (Recovery Point Objective): 24 hours maximum data loss
+Availability Target: 99.5% uptime excluding planned maintenance
 
-**Service Level Objectives for Integrations**:
-- **RTO (Recovery Time Objective)**: 4 hours for full service restoration
-- **RPO (Recovery Point Objective)**: 24 hours maximum data loss
-- **Availability Target**: 99.5% uptime excluding planned maintenance
+Failover Procedures:
 
-**Failover Procedures**:
-- **Database**: Automatic failover to secondary replica
-- **Power BI**: Workspace backup in secondary tenant
-- **Integration Endpoints**: Load balancer with health checks
+Database: Automatic failover to secondary replica
+Power BI: Workspace backup in secondary tenant
+Integration Endpoints: Load balancer with health checks
 
----
 
-## Performance Optimization
+Performance Optimization
+Integration Performance Tuning
+Database Optimization:
 
-### Integration Performance Tuning
+Simplified Indexing: Optimized indexes for 6 core KPI calculations only
+Query Performance: Regular review of essential Power BI queries
+Connection Pooling: Efficient connection management for concurrent access
 
-**Database Optimization**:
-- **Indexing Strategy**: Optimized indexes on frequently queried columns
-- **Query Performance**: Regular review and optimization of Power BI queries
-- **Connection Pooling**: Efficient connection management for concurrent access
+API Optimization:
 
-**API Optimization**:
-- **Caching Strategy**: Redis cache for frequently accessed configuration data
-- **Request Batching**: Combine multiple API calls where possible
-- **Async Processing**: Non-blocking operations for time-intensive tasks
+Basic Caching: Cache for frequently accessed capability configurations
+Request Optimization: Simplified API calls for core functionality only
+Async Processing: Non-blocking operations for time-intensive tasks
 
-**Sync Optimization**:
-- **Incremental Sync**: Only process changed configurations
-- **Parallel Processing**: Concurrent processing of independent configurations  
-- **Smart Scheduling**: Avoid peak usage periods for heavy sync operations
+Sync Optimization:
 
----
+Configuration-Only Sync: Process only capability-level changes
+Parallel Processing: Concurrent processing of independent capability configurations
+Smart Scheduling: Avoid peak usage periods for sync operations
 
-## Integration Best Practices
 
-### Development and Deployment
+Integration Best Practices
+Development and Deployment
 
-1. **Environment Strategy**: Separate development, staging, and production environments
-2. **Configuration Management**: Infrastructure as Code using ARM templates
-3. **Testing**: Automated integration testing with mock services
-4. **Documentation**: Maintain current integration documentation and runbooks
-5. **Version Control**: Track all configuration and code changes
+Simplified Environment Strategy: Development, production environments only
+Basic Configuration Management: Core configuration tracking via Git
+Essential Testing: Automated testing for 6 core KPI calculations
+Streamlined Documentation: Focus on essential integration points only
 
-### Operational Excellence
+Operational Excellence
 
-1. **Monitoring First**: Implement monitoring before deploying integrations
-2. **Graceful Degradation**: Design integrations to handle partial failures
-3. **Circuit Breaker Pattern**: Prevent cascade failures across integrations
-4. **Regular Reviews**: Monthly integration health reviews and optimization
-5. **Security Updates**: Regular review and update of security configurations
+Monitoring First: Implement basic monitoring before deploying integrations
+Simple Error Handling: Graceful handling of common failure scenarios
+Essential Reviews: Monthly integration health reviews
+Core Security: Regular review of capability-level access controls
 
-### Troubleshooting Common Issues
+Troubleshooting Common Issues
+Confluence Sync Failures:
 
-**Confluence Sync Failures**:
-- Verify API token validity and permissions
-- Check page template compliance
-- Validate network connectivity and firewall rules
+Verify API token validity and permissions
+Check capability configuration page compliance
+Validate network connectivity and firewall rules
 
-**Email Delivery Problems**:
-- Confirm SMTP authentication and certificates
-- Check recipient validation and bounce lists
-- Verify email template compatibility
+Email Delivery Problems:
 
-**Power BI Integration Issues**:
-- Validate service principal permissions
-- Check workspace capacity and licensing
-- Monitor API rate limits and usage patterns
+Confirm SMTP authentication and certificates
+Check recipient validation for core stakeholders
+Verify email template compatibility
 
-**Teams Notification Failures**:
-- Verify webhook URL validity and permissions
-- Check Teams app installation status
-- Validate message format compliance
+Power BI Integration Issues:
 
-This comprehensive integration setup ensures reliable, secure, and performant connections across all systems within the SLO Dashboard ecosystem. Regular maintenance and monitoring guarantee optimal operation as the system scales across the organization.
+Validate service principal permissions
+Check workspace capacity and licensing
+Monitor API rate limits and usage patterns
+
+Teams Notification Failures:
+
+Verify webhook URL validity and permissions
+Check Teams app installation status
+Validate message format for core alerts
+
+Summary
+This simplified integration setup ensures reliable, secure connections across all essential systems within the SLO Dashboard ecosystem. By focusing on the 6 core KPIs and removing complex analytics, the integration layer is more maintainable, easier to troubleshoot, and provides faster performance for end users.
+Key Simplifications Achieved:
+
+Capability-level configuration only (no service-specific overrides)
+Basic role-based access (no individual performance tracking)
+Essential monitoring (focused on core system health)
+Streamlined alerts (6 core KPIs only)
+Simplified data flows (reduced complexity by 60%)
+
+Regular maintenance and monitoring guarantee optimal operation as the system scales across the organization while maintaining focus on essential service delivery metrics.

@@ -1,0 +1,119 @@
+  session12:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Read and store the content of new_document_structure.txt. This document defines the names of new files and describes what content should go into each. Do not perform any actions yet — just retain this information for future steps.
+    - Please       You will now create a new file called administration/system-maintenance.md. Based on the structure defined in new_document_structure.txt, extract all relevant content from the existing documents in the folder that belongs in administration/system-maintenance.md. Rewrite, clean, and organize the content into a logically structured and concise markdown document. Remove irrelevant sections, merge overlapping ideas, and ensure the final file is readable and standalone.
+    - Please       Review the new file administration/system-maintenance.md for clarity, completeness, and structure. Identify any missing content, redundancies, or inconsistencies and fix them directly.
+    - Please       Present the final version of administration/system-maintenance.md as a complete clean markdown file, ready for use. Do not include any explanation or commentary — only output the contents of the file in clean markdown format
+
+
+  session13:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Reflect on the entire set of documents and identify whether the current project structure supports long term growth and adaptability
+    - Please       Identify bottlenecks or inefficiencies in how the current project structure is implemented across teams tools or deliverables
+    - Please       Compare the current structural model with proven scalable frameworks or architectures and assess whether an alternative structure would better support complexity or volume
+    - Please       Assess whether current workflows and ownership models would break or become inefficient if the project doubled in size
+    - Please       Evaluate whether the level of abstraction or modularity in the current structure helps or hinders adaptability to future change
+    - Please       Present the final version of your findings as a complete clean markdown file, ready for use. Do not include any explanation or commentary — only output the contents of the file in clean markdown format
+
+
+  session14:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Identify parts of the current design or process that could be simplified automated or made reusable without compromising quality
+    - Please       Assess whether configuration logic or setup parameters could be externalized or standardized to improve portability and reuse
+    - Please       Determine whether dependencies between components or teams are tightly coupled in a way that limits flexibility
+    - Please       Evaluate whether the current design is overly optimized for the current state and what structural compromises it introduces for future changes
+    - Please       Present the final version of your findings as a complete clean markdown file, ready for use. Do not include any explanation or commentary — only output the contents of the file in clean markdown format
+
+  session15:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Review all foundational assumptions made in the project documentation and assess whether they still hold true given the latest goals and constraints
+    - Please       Identify structural decisions that were made based on convenience or legacy rather than long term scalability
+    - Please       Determine whether the project’s internal logic allows for graceful evolution or if it is too brittle to accept change
+    - Please       Present the final version of your findings as a complete clean markdown file, ready for use. Do not include any explanation or commentary — only output the contents of the file in clean markdown format
+
+
+  session16:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Identify any unspoken or hidden risks in the project based on the files you have access to and consider how they might impact progress
+    - Please       Examine the project for any single points of failure in systems people or processes that could jeopardize delivery
+    - Please       Consider whether any assumptions in the project documentation might fail and what impact that would have
+    - Please       Check if any critical tasks or deliverables depend on individuals or undocumented knowledge
+    - Please       Summarize your findings on unspoken risks and single points of failure in markdown
+
+  session17:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Assess whether the stated goals and activities of the project are still aligned with the strategic direction of the organization
+    - Please       Look for indicators that the project’s problem statement or scope is outdated or misaligned with the latest priorities or environment
+    - Please       Evaluate whether the project's intended outcomes will still be meaningful or valuable if current assumptions change
+    - Please       Summarize your findings on strategic misalignment or outdated relevance in markdown
+
+  session18:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Review all documents and identify every distinct workflow mentioned then check whether each workflow includes clearly defined steps responsible actors inputs outputs and decision points then provide a markdown summary of how well each workflow is documented and where clarification is needed
+    - Please       From the project materials extract all references to dependencies between systems teams or tasks then analyze whether the dependencies are explicitly mapped and managed effectively then provide a markdown summary of the dependency structure including gaps and risks
+    - Please       Scan for all mentions of stakeholders and match them to specific roles responsibilities and deliverables in the documents then assess whether stakeholder responsibilities are clearly assigned and tracked across workflows then provide a markdown summary of stakeholder alignment and areas lacking ownership
+    - Please       Analyze the sequencing and timing of tasks across workflows to evaluate whether the project is organized to minimize delays and bottlenecks then identify any process inefficiencies or redundant steps then provide a markdown summary of workflow timing and optimization opportunities
+    - Please       Identify all tools platforms or systems used to support workflows and assess whether they are integrated effectively or causing friction then evaluate the consistency of usage across teams and functions then provide a markdown summary of system integration effectiveness
+    - Please       Look for any visual workflow diagrams charts or tables in the documents then assess their accuracy completeness and consistency with textual descriptions then provide a markdown summary of the quality of visual workflow representations and suggestions for improvement
+    - Please       Assess whether escalation paths and fallback plans are documented in workflows for when delays or failures occur then provide a markdown summary of risk mitigation coverage in workflows and any missing contingencies
+
+  session19:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Review all documents and identify every distinct workflow mentioned then check whether each workflow includes clearly defined steps responsible actors inputs outputs and decision points then provide a markdown summary of how well each workflow is documented and where clarification is needed
+    - Please       From the project materials extract all references to dependencies between systems teams or tasks then analyze whether the dependencies are explicitly mapped and managed effectively then provide a markdown summary of the dependency structure including gaps and risks
+    - Please       Scan for all mentions of stakeholders and match them to specific roles responsibilities and deliverables in the documents then assess whether stakeholder responsibilities are clearly assigned and tracked across workflows then provide a markdown summary of stakeholder alignment and areas lacking ownership
+    - Please       Analyze the sequencing and timing of tasks across workflows to evaluate whether the project is organized to minimize delays and bottlenecks then identify any process inefficiencies or redundant steps then provide a markdown summary of workflow timing and optimization opportunities
+    - Please       Identify all tools platforms or systems used to support workflows and assess whether they are integrated effectively or causing friction then evaluate the consistency of usage across teams and functions then provide a markdown summary of system integration effectiveness
+    - Please       Look for any visual workflow diagrams charts or tables in the documents then assess their accuracy completeness and consistency with textual descriptions then provide a markdown summary of the quality of visual workflow representations and suggestions for improvement
+    - Please       Assess whether escalation paths and fallback plans are documented in workflows for when delays or failures occur then provide a markdown summary of risk mitigation coverage in workflows and any missing contingencies
+
+  session20:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Evaluate whether key documents such as project briefs technical specifications and summaries are consistent in tone format and structure then produce a markdown summary of your findings
+    - Please       Assess whether the current folder and file structure is logical scalable and intuitive and identify any improvements then produce a markdown summary of your findings
+    - Please       Scan the project files to detect redundancy overlapping content or documents that could be merged split or archived then produce a markdown summary of your findings
+    - Please       Determine whether a new team member could easily navigate the project and understand the workflow based only on the available files then produce a markdown summary of your findings
+    - Please       Identify whether there are any missing documents that would help clarify the project scope process or decisions then produce a markdown summary of your findings
+    - Please       Analyze whether the documentation and structure align with the stated or implied project goals and outcomes then produce a markdown summary of your findings
+    - Please       Evaluate whether repetitive logic configuration or definitions could be abstracted into reusable components and suggest a structure for doing so then produce a markdown summary of your findings
+    - Please       Check if document ownership update cadences and version control are clearly defined and traceable then produce a markdown summary of your findings
+    - Please       Identify areas of documentation or structure that reflect technical debt such as outdated notes inconsistent terminology or undocumented assumptions then produce a markdown summary of your findings
+    - Please       Based on your analysis suggest a concrete refactor plan including renamed files reorganized folders and new supporting documents then produce a markdown summary of your findings
+
+  session21:
+    claude_url: https://claude.ai/project/0196d62b-c05b-71c9-96be-728877e7e505
+    name: Code Tasks
+    prompts:
+    - Please       Identify the core objective of the project and assess whether it is clearly defined and consistently communicated across the available documents then summarize your findings in markdown format
+    - Please       Examine the current folder and file structure and assess whether it is logical intuitive and scalable for future contributors then provide your findings as a markdown summary
+    - Please       Review all documents and determine if there are any documents missing that would make understanding or onboarding easier then summarize the missing elements in markdown format
+    - Please       Evaluate whether any documents are too long or contain unrelated content that could be split into smaller focused files then provide a markdown summary with recommended file splits
+    - Please       Check for duplicated content or overlapping responsibilities across documents and suggest ways to consolidate or eliminate redundancy then output a markdown summary of your findings
+    - Please       Assess whether file names and internal headings are specific consistent and accurately reflect the content within each file then summarize inconsistencies and suggestions in markdown format
+    - Please       Review the sequencing of documents and determine if the project has a clear narrative or onboarding flow that a new user can follow then output a markdown summary of improvements
+    - Please       Investigate whether there is a clear separation between business facing documents and technical implementation documents and summarize alignment or mismatches in markdown format
+    - Please       Examine the use of configuration mapping and metadata and assess whether these are stored in maintainable formats such as csv or yaml then provide a markdown summary of recommendations
+    - Please       Identify any missing indexes start here guides or cross linking that would improve document navigation and understanding then provide a markdown summary of improvements
+    - Please       Evaluate whether key documents are version controlled annotated with rationale or include update ownership and summarize opportunities to improve governance in markdown format
+    - Please       Identify any content that includes fixme todos or placeholders and prioritize them by risk or importance then output your prioritization as a markdown summary
+    - Please       Analyze the consistency of formatting tone and language across all documents and determine whether a style guide or standardization effort would be beneficial then summarize your findings in markdown
+    - Please       Look for opportunities to abstract repeated explanations or instructions into reusable components or shared documentation then summarize the reusable patterns in markdown format
+    - Please       After completing all previous tasks compile a master markdown summary of the proposed reorganization rationale missing components governance suggestions and a stepwise plan to improve project structure

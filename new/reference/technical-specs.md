@@ -1,12 +1,8 @@
-# Technical Specifications
+Technical Specifications
+System Architecture
+High-Level Architecture
+The SLO Dashboard System is built entirely on Microsoft Power Platform and Office 365, providing a zero-development, enterprise-ready solution for service performance monitoring focused on essential delivery metrics.
 
-## System Architecture
-
-### High-Level Architecture
-
-The SLO Dashboard System is built entirely on Microsoft Power Platform and Office 365, providing a zero-development, enterprise-ready solution for service performance monitoring.
-
-```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Data Sources  │───▶│  Power BI Layer │───▶│ Distribution    │───▶│   End Users     │
 │                 │    │                 │    │ Layer           │    │                 │
@@ -21,47 +17,54 @@ The SLO Dashboard System is built entirely on Microsoft Power Platform and Offic
                     │ Management      │    │ (Power Automate)│
                     │ (Confluence)    │    │                 │
                     └─────────────────┘    └─────────────────┘
-```
+Technology Stack
+Core Platform:
 
-### Technology Stack
+Power BI Premium: Dimensional modeling, visualization, VertiPaq engine
+Power Automate: Workflow automation, smart alerting, email distribution
+SharePoint Online: Dashboard embedding, document management, collaboration
+Office 365: Authentication (Azure AD), email distribution, Teams integration
+Data Storage:
 
-**Core Platform:**
-- **Power BI Premium:** Dimensional modeling, visualization, VertiPaq engine
-- **Power Automate:** Workflow automation, smart alerting, email distribution
-- **SharePoint Online:** Dashboard embedding, document management, collaboration
-- **Office 365:** Authentication (Azure AD), email distribution, Teams integration
+SQL Server Database: Primary data store for Jira snapshot and changelog
+Power BI Datasets: Compressed VertiPaq format for analytical queries
+SharePoint Lists: User preferences, subscription management
+Integration Technologies:
 
-**Data Storage:**
-- **SQL Server Database:** Primary data store for Jira snapshot and changelog
-- **Power BI Datasets:** Compressed VertiPaq format for analytical queries
-- **SharePoint Lists:** User preferences, subscription management
+REST APIs: Confluence configuration sync, Microsoft Graph integration
+Power Query: ETL processes, data transformation, business rule implementation
+DAX: Calculation engine, KPI definitions, time intelligence
+Data Integration Flow
+Source → Database: Jira ETL job (nightly) → SQL Server
+Database → Power BI: Incremental refresh (scheduled every 4 hours)
+Confluence → Power BI: Configuration sync (nightly at 2:00 AM UTC)
+Power BI → Distribution: Automated reports and alerts via Power Automate
+Data Model Specifications
+Simplified Model Overview
+The SLO Dashboard employs a streamlined dimensional model focused on essential service delivery metrics. This simplified approach prioritizes clarity and maintainability while providing comprehensive insight into the six core performance indicators.
 
-**Integration Technologies:**
-- **REST APIs:** Confluence configuration sync, Microsoft Graph integration
-- **Power Query:** ETL processes, data transformation, business rule implementation
-- **DAX:** Calculation engine, KPI definitions, time intelligence
+Design Principles:
 
-### Data Integration Flow
+Focus on Actionable Metrics: Only KPIs that directly inform operational decisions
+Minimal Complexity: Reduced from complex multi-tier SLA hierarchies to straightforward capability-based targets
+Essential Tracking: Core time, volume, and quality measurements without individual performance analytics
+Maintainable Architecture: Simplified relationships and calculations for easier long-term management
+Dimensional Model Design
+Simplified Star Schema Implementation:
 
-1. **Source → Database:** Jira ETL job (nightly) → SQL Server
-2. **Database → Power BI:** Incremental refresh (scheduled every 4 hours)
-3. **Confluence → Power BI:** Configuration sync (nightly at 2:00 AM UTC)
-4. **Power BI → Distribution:** Automated reports and alerts via Power Automate
+Central Fact Tables: Fact_Ticket_Summary (tickets), Fact_Ticket_Status_Change (status transitions)
+3 Core Dimensions: Dim_Date, Dim_Status, Dim_Capability
+2 Configuration Tables: Config_Issue_Type_Capability_Mapping, Default_SLA_Table
+Focus: Six essential KPIs covering time, volume, and quality dimensions
+Key Components:
 
-## Data Model Specifications
+2 Fact Tables: Fact_Ticket_Summary (aggregated), Fact_Ticket_Status_Change (granular)
+3 Core Dimensions: Dim_Date, Dim_Status, Dim_Capability
+2 Configuration Tables: Config_Issue_Type_Capability_Mapping, Default_SLA_Table
+Core Table Schemas
+Fact_Ticket_Summary (Primary Fact Table):
 
-### Dimensional Model Design
-
-**Star Schema Implementation:**
-- **Central Fact Tables:** Fact_Ticket_Summary (tickets), Fact_Ticket_Status_Change (status transitions)
-- **Dimension Tables:** Dim_Date, Dim_Status, Dim_Capability, Dim_Service, Dim_Priority, Dim_Assignee
-- **Configuration Tables:** Config_Issue_Type_Capability_Mapping, Default_SLA_Table
-- **Aggregated Views:** Monthly_KPI_Summary_By_Capability, Daily_Performance_Snapshot
-
-### Core Table Schemas
-
-**Fact_Ticket_Summary (Primary Fact Table):**
-```sql
+sql
 -- Business Keys
 key                     NVARCHAR(50)    -- Jira ticket key (primary business key)
 issue_type              NVARCHAR(50)    -- Bug/Story/Epic/Task/Incident
@@ -75,15 +78,10 @@ resolution_date         DATETIME2       -- Resolution timestamp (UTC)
 CreatedDate             DATE            -- Derived: Date portion of created
 ResolvedDate            DATE            -- Derived: Date portion of resolution_date
 
--- Assignee and Priority
-assignee_display_name   NVARCHAR(200)   -- Current assignee
-priority                NVARCHAR(50)    -- P1/P2/P3/P4
-
--- Calculated Performance Fields
+-- Core Performance Fields
 TotalResponseTimeHours  DECIMAL(18,2)   -- Total response time in hours
 ResolutionTimeDays      INT             -- Calendar days from creation to resolution
 Met_SLA                 BIT             -- SLA achievement flag (TRUE/FALSE/NULL)
-Was_Reopened           BIT             -- Ticket reopening indicator
 
 -- SLO Targets (Point-in-time)
 ResponseTimeTargetDays  DECIMAL(10,2)   -- SLA target at time of measurement
@@ -92,10 +90,9 @@ ResponseTimeTargetDays  DECIMAL(10,2)   -- SLA target at time of measurement
 IsResolved             BIT             -- Resolution status flag
 IsOverdue              BIT             -- Past SLO deadline indicator
 DaysInCurrentStatus    INT             -- Age in current status
-```
+Fact_Ticket_Status_Change (Status Transition Fact):
 
-**Fact_Ticket_Status_Change (Status Transition Fact):**
-```sql
+sql
 -- Primary Keys
 ChangeID               BIGINT IDENTITY(1,1)    -- Surrogate key
 id                     BIGINT                  -- Source changelog ID
@@ -114,16 +111,12 @@ DurationBusinessHours  DECIMAL(18,2)           -- Business time (excludes weeken
 IsLeadTimeStart       BIT                     -- Marks start of lead time measurement
 IsCycleTimeStart      BIT                     -- Marks start of cycle time measurement
 IsResponseTimeEnd     BIT                     -- Marks end of response time measurement
-ReopenEvent           BIT                     -- Identifies reopening transitions
 
 -- Metadata
 ChangeDate            DATE                    -- Date for relationship to Dim_Date
-priority              NVARCHAR(50)            -- Priority at time of change
-assignee_display_name NVARCHAR(200)           -- Assignee at time of change
-```
+Dim_Date (Time Dimension):
 
-**Dim_Date (Time Dimension):**
-```sql
+sql
 -- Primary Key
 Date                  DATE            -- Calendar date (primary key)
 DateKey               INT             -- YYYYMMDD integer key for performance
@@ -149,51 +142,115 @@ QuarterStart          DATE            -- First day of quarter
 QuarterEnd            DATE            -- Last day of quarter
 YearStart             DATE            -- First day of year
 YearEnd               DATE            -- Last day of year
-```
+Dim_Status (Status Dimension):
 
-### Relationship Configuration
+sql
+-- Primary Key
+status                NVARCHAR(50)    -- Status name (business key)
 
-**Active Relationships:**
-```javascript
+-- Status Classification
+StatusCategory        NVARCHAR(50)    -- High-level grouping (To Do, In Progress, Done)
+StatusOrder           INT             -- Display sequence for workflow visualization
+
+-- SLO Timing Rules
+IncludeInLeadTime     BIT             -- Used for lead time start calculation
+IncludeInCycleTime    BIT             -- Used for cycle time measurement
+IncludeInResponseTime BIT             -- Used for response time end calculation
+
+-- Business Logic Flags
+IsActiveStatus        BIT             -- Indicates work is actively being performed
+IsFinalStatus         BIT             -- Indicates completion
+IsWaitingStatus       BIT             -- Indicates external dependencies
+Dim_Capability (Capability Dimension):
+
+sql
+-- Primary Key
+CapabilityKey         NVARCHAR(10)    -- Short identifier (DQ, DE, CC, RD, RM)
+
+-- Business Definition
+CapabilityName        NVARCHAR(100)   -- Display name (Data Quality, Data Extracts, etc.)
+CapabilityOwner       NVARCHAR(100)   -- Responsible team/person
+BusinessDomain        NVARCHAR(50)    -- Domain classification
+
+-- SLO Targets
+LeadTimeTargetDays    DECIMAL(10,2)   -- Default lead time SLA
+CycleTimeTargetDays   DECIMAL(10,2)   -- Default cycle time SLA  
+ResponseTimeTargetDays DECIMAL(10,2)  -- Default response time SLA
+
+-- Metadata
+IsActive              BIT             -- Currently active capability
+CreatedDate           DATE            -- When capability was established
+LastModified          DATE            -- Last update to configuration
+Config_Issue_Type_Capability_Mapping (Issue Type Mapping):
+
+sql
+-- Primary Key
+MappingKey            INT IDENTITY(1,1)    -- Surrogate key
+
+-- Mapping Definition
+IssueType             NVARCHAR(50)         -- Jira issue type (business key)
+CapabilityKey         NVARCHAR(10)         -- Target capability
+
+-- Metadata
+IsActive              BIT                  -- Whether mapping is active
+EffectiveDate         DATE                 -- When mapping becomes active
+CreatedBy             NVARCHAR(100)        -- Who established the mapping
+Notes                 NVARCHAR(500)        -- Business context
+Default_SLA_Table (SLA Fallback Values):
+
+sql
+-- Primary Key
+SLA_Key               INT IDENTITY(1,1)    -- Surrogate key
+
+-- SLA Definition
+TicketType            NVARCHAR(50)         -- Jira issue type (business key)
+SLA_Days              DECIMAL(10,2)        -- Default SLA target in calendar days
+DefaultCriticality    NVARCHAR(50)         -- Standard criticality level
+
+-- Business Rules
+ExcludeWeekends       BIT                  -- Whether weekends are excluded
+BusinessDaysOnly      BIT                  -- Whether calculation uses business days only
+Notes                 NVARCHAR(500)        -- Business justification
+
+-- Metadata
+IsActive              BIT                  -- Whether SLA is currently active
+CreatedDate           DATE                 -- When SLA was established
+Relationship Configuration
+Active Relationships:
+
+javascript
 // Primary active relationships for standard filtering
 Fact_Ticket_Summary[CreatedDate] → Dim_Date[Date] (Many-to-One)
 Fact_Ticket_Summary[issue_type] → Config_Issue_Type_Capability_Mapping[IssueType] (Many-to-One)
 Fact_Ticket_Status_Change[TicketKey] → Fact_Ticket_Summary[key] (Many-to-One)
 Fact_Ticket_Status_Change[ChangeDate] → Dim_Date[Date] (Many-to-One)
 Config_Issue_Type_Capability_Mapping[CapabilityKey] → Dim_Capability[CapabilityKey] (Many-to-One)
-```
+Fact_Ticket_Summary[status] → Dim_Status[status] (Many-to-One)
+Inactive Relationships (used with USERELATIONSHIP in DAX):
 
-**Inactive Relationships (used with USERELATIONSHIP in DAX):**
-```javascript
+javascript
 // Role-playing date relationships
 Fact_Ticket_Summary[ResolvedDate] → Dim_Date[Date] (Many-to-One, Inactive)
 
-// Multiple status relationships
+// Multiple status relationships for status change analysis
 Fact_Ticket_Status_Change[from_string] → Dim_Status[status] (Many-to-One, Inactive)
 Fact_Ticket_Status_Change[to_string] → Dim_Status[status] (Many-to-One, Active)
 
 // Default SLA fallback
 Fact_Ticket_Summary[issue_type] → Default_SLA_Table[TicketType] (Many-to-One, Inactive)
-```
+Cross-Filter Directions:
 
-**Cross-Filter Directions:**
-- Fact-to-Dimension: Single (standard)
-- Dimension-to-Fact: Both (for drill-through scenarios)
+Fact-to-Dimension: Single (standard)
+Dimension-to-Fact: Both (for drill-through scenarios)
+Business Logic Implementation
+SLA Calculation Hierarchy
+The simplified system implements a 2-tier SLA target resolution with automatic fallback:
 
-## Business Logic Implementation
-
-### SLA Calculation Hierarchy
-
-The system implements a four-tier SLA target resolution with automatic fallback:
-
-```dax
--- SLA Target Resolution Logic
+dax
+-- Simplified SLA Target Resolution Logic
 SLA_Target_Days = 
 COALESCE(
-    -- Priority 1: Service-specific override
-    RELATED(Dim_Service[ServiceResponseTimeTarget]),
-    
-    -- Priority 2: Capability-level target
+    -- Priority 1: Capability-level target
     CALCULATE(
         RELATED(Dim_Capability[ResponseTimeTargetDays]),
         USERELATIONSHIP(
@@ -202,21 +259,20 @@ COALESCE(
         )
     ),
     
-    -- Priority 3: Default SLA table
+    -- Priority 2: Default SLA table
     CALCULATE(
         MAX(Default_SLA_Table[SLA_Days]),
-        USERELATIONSHIP(Fact_Ticket_Summary[issue_type], Default_SLA_Table[TicketType])
+        USERELATIONSHIP(Fact_Ticket_Summary[issue_type], Default_SLA_Table[TicketType]),
+        Default_SLA_Table[IsActive] = TRUE
     ),
     
-    -- Priority 4: Ultimate fallback
+    -- Priority 3: Ultimate fallback
     5
 )
-```
+Business Day Calculation Algorithm
+Power Query M Implementation:
 
-### Business Day Calculation Algorithm
-
-**Power Query M Implementation:**
-```m
+m
 // Business hours calculation (9 AM - 5 PM, weekdays only)
 CalculateBusinessHours = (StartTime as datetime, EndTime as datetime) =>
     let
@@ -256,41 +312,44 @@ CalculateBusinessHours = (StartTime as datetime, EndTime as datetime) =>
         )
     in
         BusinessHours
-```
+Core KPI Calculations
+Six Essential KPIs
+The simplified SLO Dashboard focuses on six core performance indicators that provide comprehensive insight into service delivery across time, volume, and quality dimensions:
 
-### Reopening Detection Logic
+1. Lead Time (Responsiveness)
 
-**Business Rules:**
-- Must transition from Done-like status to Open-like status
-- Minimum resolution time: 1 hour (excludes immediate corrections)
-- Excludes changes within 30 minutes (administrative corrections)
+Definition: Time from ticket creation until work begins
+Business Value: Measures organizational responsiveness to customer requests
+Calculation: Average business hours from creation to "In Progress" status
+2. Cycle Time (Efficiency)
 
-```m
-// Reopening detection in Power Query
-AddReopenEvent = Table.AddColumn(StatusChanges, "ReopenEvent", each
-    let
-        DoneStatuses = {"Done", "Resolved", "Closed", "Completed", "Fixed"},
-        OpenStatuses = {"To Do", "Open", "In Progress", "Backlog", "Reopened"},
-        
-        FromDoneStatus = List.Contains(DoneStatuses, [from_string]),
-        ToOpenStatus = List.Contains(OpenStatuses, [to_string]),
-        
-        // Must be resolved for meaningful period
-        WasActuallyResolved = Duration.TotalHours([change_created] - [PreviousChangeTime]) > 1,
-        
-        // Exclude immediate corrections
-        NotImmediateCorrection = Duration.TotalMinutes([change_created] - [PreviousChangeTime]) > 30
-    in
-        FromDoneStatus and ToOpenStatus and WasActuallyResolved and NotImmediateCorrection
-)
-```
+Definition: Time from work start until completion
+Business Value: Indicates work process efficiency and team capacity
+Calculation: Average business hours from "In Progress" to "Done" status
+3. Response Time (Customer Experience)
 
-## Core KPI Calculations
+Definition: Complete end-to-end resolution time
+Business Value: Total customer experience from request to delivery
+Calculation: Average calendar days from creation to resolution
+4. Throughput (Capacity)
 
-### Primary SLO Measures
+Definition: Volume of tickets completed over time
+Business Value: Measures delivery capacity and identifies bottlenecks
+Calculation: Count of resolved tickets per time period
+5. Service Quality (SLA Achievement)
 
-**SLO Achievement Rate:**
-```dax
+Definition: Percentage of tickets resolved within SLA targets
+Business Value: Measures reliability and commitment fulfillment
+Calculation: (Tickets meeting SLA ÷ Total resolved tickets) × 100
+6. Issue Resolution Time (Average Performance)
+
+Definition: Simple average resolution time across all tickets
+Business Value: Baseline performance measurement for process improvement
+Calculation: Average resolution time in days for all resolved tickets
+Essential SLO Measures
+SLO Achievement Rate:
+
+dax
 SLO_Achievement_Rate = 
 VAR ResolvedTickets = 
     FILTER(
@@ -301,31 +360,54 @@ VAR TicketsMetSLA =
     FILTER(ResolvedTickets, [Met_SLA] = TRUE)
 RETURN
     DIVIDE(COUNTROWS(TicketsMetSLA), COUNTROWS(ResolvedTickets), 0) * 100
-```
+Average Lead Time:
 
-**Throughput (Volume-based KPI):**
-```dax
+dax
+Lead_Time_Days = 
+CALCULATE(
+    AVERAGE(Fact_Ticket_Status_Change[DurationBusinessHours]),
+    Fact_Ticket_Status_Change[IsLeadTimeStart] = TRUE
+) / 24
+Average Cycle Time:
+
+dax
+Cycle_Time_Days = 
+VAR CycleTimeTickets = 
+    SUMMARIZE(
+        FILTER(Fact_Ticket_Status_Change, [IsCycleTimeStart] = TRUE),
+        [TicketKey],
+        "CycleTime", SUM(Fact_Ticket_Status_Change[DurationBusinessHours])
+    )
+RETURN AVERAGEX(CycleTimeTickets, [CycleTime]) / 24
+Throughput:
+
+dax
 Throughput = 
 CALCULATE(
     COUNTROWS(Fact_Ticket_Summary),
     Fact_Ticket_Summary[IsResolved] = TRUE,
     USERELATIONSHIP(Fact_Ticket_Summary[ResolvedDate], Dim_Date[Date])
 )
-```
+Average Response Time:
 
-**Average Response Time (Time-based KPI):**
-```dax
+dax
 Avg_Response_Time_Days = 
 CALCULATE(
     AVERAGE(Fact_Ticket_Summary[ResolutionTimeDays]),
     Fact_Ticket_Summary[IsResolved] = TRUE
 )
-```
+Service Quality (Issue Resolution Time):
 
-### Time Intelligence Functions
+dax
+Issue_Resolution_Time = 
+CALCULATE(
+    AVERAGE(Fact_Ticket_Summary[ResolutionTimeDays]),
+    Fact_Ticket_Summary[IsResolved] = TRUE
+)
+Time Intelligence Functions
+Month-over-Month Change:
 
-**Month-over-Month Change:**
-```dax
+dax
 MoM_SLO_Change = 
 VAR CurrentMonth = [SLO_Achievement_Rate]
 VAR PreviousMonth = 
@@ -339,19 +421,17 @@ RETURN
         DIVIDE(CurrentMonth - PreviousMonth, PreviousMonth) * 100,
         BLANK()
     )
-```
+Rolling Six-Month Average:
 
-**Rolling Six-Month Average:**
-```dax
+dax
 Six_Month_Avg_SLO = 
 CALCULATE(
     [SLO_Achievement_Rate],
     DATESINPERIOD(Dim_Date[Date], MAX(Dim_Date[Date]), -6, MONTH)
 )
-```
+Tickets at Risk (Predictive):
 
-**Tickets at Risk (Predictive):**
-```dax
+dax
 Tickets_At_Risk = 
 VAR RiskThreshold = 0.8  -- 80% of SLA target
 RETURN
@@ -362,59 +442,54 @@ COUNTROWS(
         [ResolutionTimeDays] >= [ResponseTimeTargetDays] * RiskThreshold
     )
 )
-```
+Performance Specifications
+System Requirements
+Power BI Premium Capacity:
 
-## Performance Specifications
+Minimum: P1 (25GB memory, 8 v-cores) - Development/Testing
+Recommended: P2 (50GB memory, 16 v-cores) - Production
+Enterprise: P3+ (100GB+ memory, 32+ v-cores) - Large scale deployment
+Data Volume Capacity:
 
-### System Requirements
+Tickets: 1M+ active records, 5M+ historical
+Status Changes: 10M+ records with 6-month retention
+Users: 1,000+ concurrent, 10,000+ total
+Compressed Dataset Size: 1-5GB depending on history (reduced from complex model)
+Performance Targets
+Dashboard Response Times:
 
-**Power BI Premium Capacity:**
-- **Minimum:** P1 (25GB memory, 8 v-cores) - Development/Testing
-- **Recommended:** P2 (50GB memory, 16 v-cores) - Production
-- **Enterprise:** P3+ (100GB+ memory, 32+ v-cores) - Large scale deployment
+Initial dashboard load: <3 seconds
+Filter interactions: <1 second
+Cross-filter operations: <2 seconds
+Export operations: <10 seconds
+Mobile dashboard load: <5 seconds
+Data Refresh Performance:
 
-**Data Volume Capacity:**
-- **Tickets:** 1M+ active records, 5M+ historical
-- **Status Changes:** 10M+ records with 6-month retention
-- **Users:** 1,000+ concurrent, 10,000+ total
-- **Compressed Dataset Size:** 2-8GB depending on history
+Full refresh: <1 hour (improved from simplified model)
+Incremental refresh: <15 minutes
+Configuration sync: <10 minutes
+Real-time streaming: <5 seconds latency
+Concurrent User Limits:
 
-### Performance Targets
+Dashboard viewers: 500 concurrent
+Report builders: 50 concurrent
+API consumers: 100 requests/minute
+Optimization Strategies
+Memory Optimization:
 
-**Dashboard Response Times:**
-- Initial dashboard load: <3 seconds
-- Filter interactions: <1 second
-- Cross-filter operations: <2 seconds
-- Export operations: <10 seconds
-- Mobile dashboard load: <5 seconds
+Reduced table count from 10+ to 6 core tables
+Eliminated complex calculated columns for reopening analysis
+Simplified relationship model reducing memory overhead
+Optimized data types for essential fields only
+Query Optimization:
 
-**Data Refresh Performance:**
-- Full refresh: <2 hours
-- Incremental refresh: <30 minutes
-- Configuration sync: <15 minutes
-- Real-time streaming: <5 seconds latency
+Streamlined DAX calculations focusing on 6 core KPIs
+Reduced cross-table complexity with simplified relationships
+Pre-calculated aggregations in fact tables where beneficial
+Optimized relationship directions for common query patterns
+Incremental Refresh Configuration:
 
-**Concurrent User Limits:**
-- Dashboard viewers: 500 concurrent
-- Report builders: 50 concurrent
-- API consumers: 100 requests/minute
-
-### Optimization Strategies
-
-**Memory Optimization:**
-- Remove unused columns in Power Query
-- Optimize data types (use appropriate precision)
-- Implement column store compression
-- Use appropriate relationship cardinality
-
-**Query Optimization:**
-- Pre-calculate aggregations in calculated tables
-- Use variables in DAX to avoid recalculation
-- Implement incremental refresh for large tables
-- Optimize relationship directions
-
-**Incremental Refresh Configuration:**
-```json
+json
 {
   "refreshPolicy": {
     "incremental": {
@@ -424,19 +499,16 @@ COUNTROWS(
     }
   }
 }
-```
+Security Specifications
+Authentication Architecture
+Azure Active Directory Integration:
 
-## Security Specifications
+Single Sign-On (SSO) across all Microsoft 365 services
+Multi-Factor Authentication (MFA) enforcement
+Conditional access policies based on location/device
+Service Principal Configuration:
 
-### Authentication Architecture
-
-**Azure Active Directory Integration:**
-- Single Sign-On (SSO) across all Microsoft 365 services
-- Multi-Factor Authentication (MFA) enforcement
-- Conditional access policies based on location/device
-
-**Service Principal Configuration:**
-```json
+json
 {
   "servicePrincipal": {
     "appId": "12345678-1234-1234-1234-123456789012",
@@ -448,45 +520,39 @@ COUNTROWS(
     ]
   }
 }
-```
+Authorization Model
+Role-Based Access Control (RBAC):
 
-### Authorization Model
+Role	Permissions	Implementation
+System Admin	Full system access, user management	Azure AD Security Group
+Executive	All capabilities, organization-wide view	Power BI Security Role
+Capability Owner	Full access to owned capability	Row-Level Security (RLS)
+Team Member	Read access to team tickets	RLS + Column restrictions
+Guest	Specific report access only	Guest authentication
+Row-Level Security Implementation:
 
-**Role-Based Access Control (RBAC):**
-
-| Role | Permissions | Implementation |
-|------|-------------|----------------|
-| **System Admin** | Full system access, user management | Azure AD Security Group |
-| **Executive** | All capabilities, organization-wide view | Power BI Security Role |
-| **Capability Owner** | Full access to owned capability | Row-Level Security (RLS) |
-| **Team Member** | Read access to team tickets | RLS + Column restrictions |
-| **Guest** | Specific report access only | Guest authentication |
-
-**Row-Level Security Implementation:**
-```dax
--- Capability-based security filter
+dax
+-- Simplified capability-based security filter
 Capability_Security_Filter = 
 VAR UserEmail = USERPRINCIPALNAME()
 VAR UserCapabilities = 
-    CALCULATETABLE(
-        VALUES(User_Capability_Mapping[CapabilityKey]),
-        User_Capability_Mapping[UserEmail] = UserEmail
+    LOOKUPVALUE(
+        User_Capability_Mapping[CapabilityKeys],
+        User_Capability_Mapping[UserEmail], UserEmail
     )
 RETURN
     [CapabilityKey] IN UserCapabilities
     ||
     RELATED(Dim_Capability[CapabilityOwnerEmail]) = UserEmail
-```
+Data Protection
+Encryption Standards:
 
-### Data Protection
+Data at Rest: AES 256-bit encryption (Azure managed keys)
+Data in Transit: TLS 1.2+ for all communications
+Power BI Datasets: Microsoft-managed encryption with optional BYOK
+Data Classification:
 
-**Encryption Standards:**
-- **Data at Rest:** AES 256-bit encryption (Azure managed keys)
-- **Data in Transit:** TLS 1.2+ for all communications
-- **Power BI Datasets:** Microsoft-managed encryption with optional BYOK
-
-**Data Classification:**
-```yaml
+yaml
 Data_Classification:
   Public:
     - Aggregated SLO metrics
@@ -497,22 +563,18 @@ Data_Classification:
     - Team-level metrics
     - Process insights
   Confidential:
-    - Personal assignee performance
-    - Individual ticket details
     - Audit logs
-```
+    - Configuration changes
+Privacy Controls:
 
-**Privacy Controls:**
-- Automatic data anonymization after 18 months
-- Personal data retention policies
-- GDPR compliance features (data subject requests)
+Automatic data anonymization after 18 months
+Personal data retention policies
+GDPR compliance features (data subject requests)
+Integration Specifications
+REST API Endpoints
+Confluence Configuration API:
 
-## Integration Specifications
-
-### REST API Endpoints
-
-**Confluence Configuration API:**
-```http
+http
 # Get capability configuration
 GET /rest/api/content/{pageId}?expand=body.storage,version
 Authorization: Bearer {jwt_token}
@@ -526,10 +588,9 @@ Content-Type: application/json
   "version": {"number": 2},
   "body": {"storage": {"value": "{html_content}"}}
 }
-```
+Microsoft Graph Integration:
 
-**Microsoft Graph Integration:**
-```http
+http
 # Send Teams notification
 POST /v1.0/teams/{teamId}/channels/{channelId}/messages
 Authorization: Bearer {oauth_token}
@@ -540,10 +601,9 @@ Content-Type: application/json
     "content": "<h3>SLO Alert</h3><p>{alert_message}</p>"
   }
 }
-```
+Power BI REST API:
 
-**Power BI REST API:**
-```http
+http
 # Trigger dataset refresh
 POST /v1.0/myorg/groups/{workspaceId}/datasets/{datasetId}/refreshes
 Authorization: Bearer {oauth_token}
@@ -557,12 +617,10 @@ Content-Type: application/json
     "reportLevelFilters": []
   }
 }
-```
+Error Handling and Resilience
+Circuit Breaker Pattern:
 
-### Error Handling and Resilience
-
-**Circuit Breaker Pattern:**
-```javascript
+javascript
 const circuitBreaker = {
   failureThreshold: 5,
   resetTimeout: 60000,
@@ -572,20 +630,17 @@ const circuitBreaker = {
     onOpen: () => log.warn('Circuit breaker opened')
   }
 };
-```
+Retry Logic:
 
-**Retry Logic:**
-- Exponential backoff: 1s, 2s, 4s, 8s, 16s
-- Maximum retries: 5 attempts
-- Retry conditions: 429 (rate limit), 500-503 (server errors)
-- No retry: 400-404, 401 (authentication), 403 (authorization)
+Exponential backoff: 1s, 2s, 4s, 8s, 16s
+Maximum retries: 5 attempts
+Retry conditions: 429 (rate limit), 500-503 (server errors)
+No retry: 400-404, 401 (authentication), 403 (authorization)
+Monitoring and Alerting
+System Health Metrics
+Key Performance Indicators:
 
-## Monitoring and Alerting
-
-### System Health Metrics
-
-**Key Performance Indicators:**
-```yaml
+yaml
 SLI_Definitions:
   Availability:
     - Dashboard_Uptime: 99.9%
@@ -596,28 +651,26 @@ SLI_Definitions:
   Reliability:
     - Data_Refresh_Success_Rate: 99.0%
     - Configuration_Sync_Success_Rate: 95.0%
-```
+Monitoring Stack:
 
-**Monitoring Stack:**
-- **Application Performance:** Azure Application Insights
-- **Infrastructure:** Azure Monitor, Power BI Admin Portal
-- **Business Metrics:** Custom Power BI monitoring dashboard
-- **Log Aggregation:** Azure Log Analytics
+Application Performance: Azure Application Insights
+Infrastructure: Azure Monitor, Power BI Admin Portal
+Business Metrics: Simplified Power BI monitoring dashboard (6 core KPIs)
+Log Aggregation: Azure Log Analytics
+Alert Configuration
+Critical Alerts (Immediate Response):
 
-### Alert Configuration
+System unavailable (>5 minute outage)
+Data refresh failures (>2 consecutive failures)
+Security incidents (unauthorized access attempts)
+Warning Alerts (24-hour Response):
 
-**Critical Alerts (Immediate Response):**
-- System unavailable (>5 minute outage)
-- Data refresh failures (>2 consecutive failures)
-- Security incidents (unauthorized access attempts)
+Performance degradation (>5 second load times)
+Configuration sync delays (>4 hours)
+User error rate increase (>10% spike)
+Notification Channels:
 
-**Warning Alerts (24-hour Response):**
-- Performance degradation (>5 second load times)
-- Configuration sync delays (>4 hours)
-- User error rate increase (>10% spike)
-
-**Notification Channels:**
-```yaml
+yaml
 Alert_Routing:
   Critical:
     - PagerDuty: On-call engineer
@@ -628,12 +681,10 @@ Alert_Routing:
     - Teams: Monitoring channel
   Info:
     - Dashboard: System health page
-```
+Audit and Compliance
+Audit Log Structure:
 
-### Audit and Compliance
-
-**Audit Log Structure:**
-```sql
+sql
 -- Comprehensive audit logging
 System_Audit_Log (
     log_id                BIGINT IDENTITY(1,1),
@@ -647,27 +698,23 @@ System_Audit_Log (
     result_status        NVARCHAR(20),    -- SUCCESS, FAILURE, ERROR
     additional_details   NVARCHAR(MAX)    -- JSON payload
 )
-```
+Compliance Features:
 
-**Compliance Features:**
-- **Data Retention:** Automated policy enforcement
-- **Access Logging:** Complete user activity trail
-- **Change Tracking:** Version control for all configurations
-- **Privacy Controls:** Automated PII detection and masking
+Data Retention: Automated policy enforcement
+Access Logging: Complete user activity trail
+Change Tracking: Version control for all configurations
+Privacy Controls: Automated PII detection and masking
+Disaster Recovery
+Backup Strategy:
 
-### Disaster Recovery
+Automated Daily Backups: Power BI workspace content
+Configuration Backup: Confluence page exports
+Database Backup: Full and differential backups
+Recovery Testing: Monthly validation procedures
+Recovery Time Objectives:
 
-**Backup Strategy:**
-- **Automated Daily Backups:** Power BI workspace content
-- **Configuration Backup:** Confluence page exports
-- **Database Backup:** Full and differential backups
-- **Recovery Testing:** Monthly validation procedures
+RTO (Recovery Time): 4 hours for full system restoration
+RPO (Recovery Point): 24 hours maximum data loss
+Partial Recovery: 1 hour for dashboard-only restoration
+This simplified specification serves as the authoritative technical reference for implementing, maintaining, and extending the streamlined SLO Dashboard System focused on six essential performance indicators.
 
-**Recovery Time Objectives:**
-- **RTO (Recovery Time):** 4 hours for full system restoration
-- **RPO (Recovery Point):** 24 hours maximum data loss
-- **Partial Recovery:** 1 hour for dashboard-only restoration
-
----
-
-*This specification serves as the authoritative technical reference for implementing, maintaining, and extending the SLO Dashboard System across the organization.*

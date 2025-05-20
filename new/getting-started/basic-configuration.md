@@ -1,230 +1,227 @@
-# Basic Configuration Guide
-
+Basic Configuration Guide
 This guide covers the essential configuration steps to get your team's SLO tracking system working effectively. All configuration is done through your team's designated Confluence page, which automatically synchronizes with the dashboard system nightly.
+Important: Configuration changes take effect after the next nightly data refresh. Plan accordingly for any time-sensitive adjustments.
+Essential Configuration Areas
+1. SLO Targets
+Setting realistic SLO targets is crucial for meaningful performance measurement. The system uses a simple 2-tier approach to determine which target applies to each ticket:
 
-**Important**: Configuration changes take effect after the next nightly data refresh. Plan accordingly for any time-sensitive adjustments.
+Capability-level targets (your team's configured targets)
+Default organizational targets (automatic fallback values)
 
-## Essential Configuration Areas
+Default Starting Points by Issue Type:
 
-### 1. SLO Targets
+Bug: 3 business days (critical defects need faster response)
+Task: 5 business days (standard work items)
+Story: 7 business days (feature development work)
+Epic: 10 business days (large initiatives, complex work)
+Incident: 1 business day (urgent production issues)
 
-Setting realistic SLO targets is crucial for meaningful performance measurement. The system uses a hierarchical approach to determine which target applies to each ticket:
+How to Configure in Confluence:
 
-1. **Service-specific targets** (if you've set custom targets for specific services)
-2. **Capability-level targets** (your team's general targets)
-3. **Default organizational targets** (fallback values)
+Navigate to your team's SLO Configuration page
+Update the "SLO Targets" table with your desired values
+Provide business justification for each target
+Save the page - changes sync automatically overnight
 
-**Default Starting Points by Issue Type:**
-- **Bug**: 3 business days (critical defects need faster response)
-- **Task**: 5 business days (standard work items)
-- **Story**: 7 business days (feature development work)
-- **Epic**: 10 business days (large initiatives, complex work)
-- **Incident**: 1 business day (urgent production issues)
+Setting Realistic Targets:
 
-**How to Configure in Confluence:**
-1. Navigate to your team's SLO Configuration page
-2. Update the "SLO Targets" table with your desired values
-3. Provide business justification for each target
-4. Save the page - changes sync automatically overnight
+Review historical performance over the past 3-6 months
+Set targets you can meet 90-95% of the time
+Consider seasonal variations and capacity constraints
+Start conservative - targets can be made more aggressive later
 
-**Setting Realistic Targets:**
-- Review historical performance over the past 3-6 months
-- Set targets you can meet 90-95% of the time
-- Consider seasonal variations and capacity constraints
-- Start conservative - targets can be made more aggressive later
+2. Issue Type Mapping
+Connect your Jira issue types to your capability. This mapping determines which SLO targets apply to each ticket and ensures proper categorization for the 6 core KPIs.
+Configuration Steps in Confluence:
 
-**Priority Adjustments:**
-The system automatically adjusts targets based on priority:
-- **P1 (Critical)**: Reduces target by 50%
-- **P2 (High)**: Reduces target by 25%  
-- **P3 (Medium)**: Uses standard target
-- **P4 (Low)**: Extends target by 50%
+List Your Issue Types: Document all Jira issue types your team uses
+Assign to Capability: Map each issue type to your capability (e.g., Data Quality, Data Extracts)
+Specify Automation Level: Mark each as Manual, Semi-Automated, or Fully Automated (for Throughput analysis)
 
-### 2. Issue Type Mapping
-
-Connect your Jira issue types to your capability and services. This mapping determines which SLO targets apply to each ticket.
-
-**Configuration Steps in Confluence:**
-1. **List Your Issue Types**: Document all Jira issue types your team uses
-2. **Assign to Capability**: Map each issue type to your capability (e.g., Data Quality, Data Extracts)
-3. **Define Services**: Group related issue types into logical services within your capability
-4. **Specify Automation Level**: Mark each as Manual, Semi-Automated, or Fully Automated
-
-**Example Issue Type Mapping:**
-```
+Example Issue Type Mapping:
 Issue Type: Bug
 ├── Capability: Data Quality
-├── Service: Data Validation Service  
 ├── Automation Level: Manual
-└── Typical Effort Hours: 8
+└── Notes: Data quality defects and corrections
 
 Issue Type: Data Extract Request
 ├── Capability: Data Extracts
-├── Service: Custom Extract Service
 ├── Automation Level: Semi-Automated
-└── Typical Effort Hours: 4
-```
+└── Notes: Custom and standard data extractions
+Best Practices:
 
-**Best Practices:**
-- Map issue types to the most specific service possible
-- Be consistent with automation level classifications
-- Update mappings when you introduce new issue types
-- Include typical effort hours to help with capacity planning
+Map issue types to the most appropriate capability
+Be consistent with automation level classifications
+Update mappings when you introduce new issue types
+Ensure all team issue types are included to avoid orphaned tickets
 
-### 3. Status Rules
+3. Status Rules
+Define how ticket statuses relate to the three core time measurements: Lead Time, Cycle Time, and Response Time. This determines when the system starts and stops timing for each KPI.
+Time Measurement Definitions:
 
-Define how ticket statuses relate to SLO time measurements. This determines when the system starts and stops timing for lead time, cycle time, and response time calculations.
+Lead Time: How quickly you begin working (creation to "In Progress")
+Cycle Time: How efficiently you complete work ("In Progress" to "Done")
+Response Time: Complete customer experience (creation to "Done")
 
-**Time Measurement Definitions:**
-- **Lead Time**: How quickly you begin working (creation to "In Progress")
-- **Cycle Time**: How efficiently you complete work ("In Progress" to "Done")  
-- **Response Time**: Complete customer experience (creation to "Done")
+Standard Status Classifications:
+Status Type          │ Time Measurement     │ Business Purpose
+────────────────────┼─────────────────────┼──────────────────────────
+Backlog             │ Lead Time Start      │ Measures response speed
+New/Open            │ Lead Time Start      │ Measures response speed
+In Progress         │ Cycle Time Start     │ Measures work efficiency
+Development         │ Cycle Time          │ Measures work efficiency
+Testing/Review      │ Cycle Time          │ Measures work efficiency
+Done/Resolved       │ Response Time End    │ Measures total delivery
+Business Day Configuration:
 
-**Standard Status Classifications:**
-```
-Status Type          │ When Timer...        │ Includes in...
-────────────────────┼─────────────────────┼──────────────────
-Backlog             │ Starts Lead Time     │ Lead Time
-In Progress         │ Starts Cycle Time    │ Cycle Time
-Code Review         │ Continues           │ Cycle Time
-Waiting for Customer│ Pauses Timer        │ Neither (external)
-Testing            │ Continues           │ Cycle Time  
-Done/Resolved      │ Ends All Timers     │ Response Time End
-```
+Exclude Weekends: Calculations use business days only (Monday-Friday)
+Business Hours: Standard 9 AM to 5 PM for partial-day calculations
+Holiday Calendar: Organizational holidays are excluded from business day calculations
 
-**Business Rules Configuration:**
-- **Exclude Weekends**: Calculations use business days only (Monday-Friday)
-- **Pause on Waiting**: Timer stops for external dependencies
-- **Holiday Calendar**: Organizational holidays are excluded from business day calculations
+Configuration in Confluence:
+Update your "Status Rules" table with the time measurement type (lead/cycle/response/other) for each status your team uses. The system will apply these rules automatically to calculate your core KPIs.
+4. Alert Thresholds
+Set up proactive alerts to manage SLO performance before issues become critical. Focus on essential notifications that support the 6 core KPIs.
+Essential Alert Types:
 
-**Configuration in Confluence:**
-Update your "Status Rules" table with the time type (lead/cycle/response/pause) for each status your team uses. The system will apply these rules automatically.
+SLO At Risk (80% threshold): Early warning when 80% of target time has elapsed
+SLO Breach: Immediate notification when target is exceeded
+Daily Digest: Summary of previous day's performance across all 6 KPIs
+Weekly Summary: Comprehensive capability performance report
 
-### 4. Alert Thresholds
+Alert Configuration in Confluence:
 
-Set up proactive alerts to manage SLO performance before issues become critical. Start with essential alerts and add more sophisticated notifications as needed.
+Navigate to your "Alert Preferences" section
+Set thresholds for each alert type (recommended: start with 80% for at-risk)
+Choose delivery methods (email, Teams, mobile push)
+Select recipients (yourself, team leads, stakeholders)
+Test alert delivery with sample notifications
 
-**Essential Alert Types:**
-- **SLO At Risk (80% threshold)**: Early warning when 80% of target time has elapsed
-- **SLO Breach**: Immediate notification when target is exceeded
-- **Daily Digest**: Summary of previous day's performance
-- **Weekly Summary**: Comprehensive capability performance report
+Delivery Method Guidelines:
 
-**Alert Configuration in Confluence:**
-1. Navigate to your "Alert Preferences" section
-2. Set thresholds for each alert type (recommended: start with 80% for at-risk)
-3. Choose delivery methods (email, Teams, mobile push)
-4. Select recipients (yourself, team leads, stakeholders)
-5. Test alert delivery with sample notifications
+Email: Daily summaries, weekly reports, non-urgent notifications
+Microsoft Teams: Real-time breaches, team-wide announcements
+Mobile Push: Critical alerts only (SLO breaches, major issues)
 
-**Delivery Method Guidelines:**
-- **Email**: Daily summaries, weekly reports, non-urgent notifications
-- **Microsoft Teams**: Real-time breaches, team-wide announcements
-- **Mobile Push**: Critical alerts only (SLO breaches, major issues)
-- **SMS**: Emergency escalation (optional, for critical capabilities)
-
-**Anti-Fatigue Features:**
+Anti-Fatigue Features:
 The system includes smart features to prevent alert overload:
-- **Intelligent suppression**: Prevents duplicate alerts for the same issue
-- **Smart batching**: Groups related alerts into single digests
-- **Dynamic timing**: Sends alerts when you're most likely to act
 
-## Configuration Best Practices
+Intelligent suppression: Prevents duplicate alerts for the same issue
+Smart batching: Groups related alerts into single digests
+Dynamic timing: Sends alerts when you're most likely to act
 
-**Start with Defaults, Then Customize**
-- Use organizational defaults as starting points
-- Make incremental adjustments based on real data
-- Change one configuration element at a time to understand impact
+Configuration Best Practices
+Start with Defaults, Then Customize
 
-**Ground Decisions in Data**
-- Review 3-6 months of historical ticket data before setting targets
-- Adjust targets to achieve 90-95% success rate (not 100%)
-- Use actual workflow patterns to define status rules
+Use organizational defaults as starting points
+Make incremental adjustments based on real data
+Change one configuration element at a time to understand impact
 
-**Involve Your Team**
-- Get input from team members on realistic targets
-- Ensure status mappings reflect how work actually flows  
-- Document configuration decisions and rationales
+Ground Decisions in Data
 
-**Plan for Iteration**
-- Schedule monthly configuration reviews for first quarter
-- Move to quarterly reviews once configuration stabilizes
-- Track changes with business justifications for audit purposes
+Review 3-6 months of historical ticket data before setting targets
+Adjust targets to achieve 90-95% success rate (not 100%)
+Use actual workflow patterns to define status rules
 
-**Maintain Documentation**
-- Keep team-specific workflow documentation current
-- Record all configuration changes with dates and reasons
-- Share configuration decisions with new team members
+Involve Your Team
 
-## Validation Checklist
+Get input from team members on realistic targets
+Ensure status mappings reflect how work actually flows
+Document configuration decisions and rationales
 
+Plan for Iteration
+
+Schedule monthly configuration reviews for first quarter
+Move to quarterly reviews once configuration stabilizes
+Track changes with business justifications for audit purposes
+
+Maintain Documentation
+
+Keep team-specific workflow documentation current
+Record all configuration changes with dates and reasons
+Share configuration decisions with new team members
+
+Validation Checklist
 Before activating your configuration for live dashboards:
+Configuration Completeness:
 
-**Configuration Completeness:**
-- [ ] SLO targets are set for all issue types your team uses
-- [ ] All Jira issue types are mapped to appropriate capabilities and services  
-- [ ] Status rules are defined for your complete workflow
-- [ ] Alert thresholds are configured with appropriate recipients
-- [ ] Business justifications are documented for all targets
+ SLO targets are set for all issue types your team uses
+ All Jira issue types are mapped to your capability
+ Status rules are defined for lead time, cycle time, and response time measurements
+ Alert thresholds are configured with appropriate recipients
+ Business justifications are documented for all targets
 
-**Technical Validation:**
-- [ ] Test tickets calculate correctly using new status rules
-- [ ] Sample SLO calculations match expected results
-- [ ] Alert test messages reach intended recipients successfully
-- [ ] Dashboard displays expected data after configuration sync
+Core KPI Support:
 
-**Team Preparation:**
-- [ ] Team members understand the new SLO definitions
-- [ ] Workflow changes are communicated to all stakeholders
-- [ ] First month review meeting is scheduled
-- [ ] Documentation is accessible to all team members
-- [ ] Escalation procedures are established for configuration issues
+ Lead Time measurement properly configured (creation to work start)
+ Cycle Time measurement covers active work period
+ Response Time captures complete customer experience
+ Throughput calculation includes all completed work
+ Service Quality tracking covers SLO achievement
+ Issue Resolution Time uses standard resolution definitions
 
-## Quick Setup Checklist
+Technical Validation:
 
+ Test tickets calculate correctly using new status rules
+ Sample SLO calculations match expected results
+ Alert test messages reach intended recipients successfully
+ Dashboard displays expected data after configuration sync
+
+Team Preparation:
+
+ Team members understand the 6 core KPI definitions
+ Workflow changes are communicated to all stakeholders
+ First month review meeting is scheduled
+ Documentation is accessible to all team members
+ Escalation procedures are established for configuration issues
+
+Quick Setup Checklist
 For teams ready to start immediately:
+Week 1:
 
-**Week 1:**
-- [ ] Complete capability definition in Confluence
-- [ ] Map all issue types to services
-- [ ] Set initial SLO targets using defaults
-- [ ] Configure basic status rules
+ Complete capability definition in Confluence
+ Map all issue types to your capability
+ Set initial SLO targets using organizational defaults
+ Configure basic status rules for the 3 time measurements
 
-**Week 2:**
-- [ ] Set up breach alerts for capability owner
-- [ ] Test configuration with sample tickets
-- [ ] Train team on SLO definitions
-- [ ] Validate initial dashboard data
+Week 2:
 
-**Week 3:**
-- [ ] Refine targets based on initial data
-- [ ] Add team member alert subscriptions
-- [ ] Document team-specific workflows
-- [ ] Schedule first performance review
+ Set up breach alerts for capability owner
+ Test configuration with sample tickets
+ Train team on the 6 core KPI definitions
+ Validate initial dashboard data
 
-## Next Steps
+Week 3:
 
+ Refine targets based on initial data
+ Add team member alert subscriptions
+ Document team-specific workflows
+ Schedule first performance review
+
+Next Steps
 Once basic configuration is complete:
 
-- Review [Team Operations Guide](../dashboard-usage/team-operations.md) for daily usage
-- Explore [Custom KPIs](../advanced-configuration/custom-kpis.md) for specialized measurements
-- Set up [Alerts and Subscriptions](../dashboard-usage/alerts-and-subscriptions.md) for your team
+Review Understanding Your First Dashboard for interpreting your 6 core KPIs
+Explore Team Operations Guide for daily usage patterns
+Set up Alerts and Subscriptions for your team
 
-## Getting Help
+Getting Help
+Configuration Questions:
 
-**Configuration Questions:**
-- Email: [platform.support@company.com](mailto:platform.support@company.com)
-- Documentation: Your team's Confluence SLO Configuration page includes detailed setup guides
-- Training: Monthly capability owner sessions include configuration workshops
+Email: platform.support@company.com
+Documentation: Your team's Confluence SLO Configuration page includes detailed setup guides
+Training: Monthly capability owner sessions include configuration workshops
 
-**Technical Issues:**
-- Troubleshooting: See [Troubleshooting Guide](../administration/troubleshooting.md) for common problems
-- Urgent Issues: Contact platform support during business hours (Ext. 5555)  
-- After-hours: Check system status page for known issues
+Technical Issues:
 
-**Peer Support:**
-- Monthly Capability Owner meetings (first Tuesday of each month)
-- Internal forums: #slo-dashboard-help on Teams
-- Champions network: Experienced users available for mentoring
+Troubleshooting: See Troubleshooting Guide for common problems
+Urgent Issues: Contact platform support during business hours (Ext. 5555)
+After-hours: Check system status page for known issues
 
-Remember: Configuration is iterative. Start with basics, learn from your data, and refine over time to create an SLO system that truly supports your team's success.
+Peer Support:
+
+Monthly Capability Owner meetings (first Tuesday of each month)
+Internal forums: #slo-dashboard-help on Teams
+Champions network: Experienced users available for mentoring
+
+Remember: Configuration is iterative. Start with the essentials for the 6 core KPIs, learn from your data, and refine over time to create an SLO system that truly supports your team's success.
