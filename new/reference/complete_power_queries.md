@@ -70,18 +70,6 @@ let
     JiraSnapshotSheet = ExcelSource{[Item="JiraSnapshot",Kind="Sheet"]}[Data],
     JiraData = Table.PromoteHeaders(JiraSnapshotSheet, [PromoteAllScalars=true]),
     
-    // 2. Load capability mapping directly
-    CapabilityMappingSheet = ExcelSource{[Item="CapabilityMapping",Kind="Sheet"]}[Data],
-    CapabilityMappingData = Table.PromoteHeaders(CapabilityMappingSheet, [PromoteAllScalars=true]),
-    
-    // 3. Load capability dimension directly
-    CapabilitySheet = ExcelSource{[Item="SLOTargets",Kind="Sheet"]}[Data],
-    CapabilityData = Table.PromoteHeaders(CapabilitySheet, [PromoteAllScalars=true]),
-    
-    // 4. Load default SLA directly
-    DefaultSLASheet = ExcelSource{[Item="DefaultSLA",Kind="Sheet"]}[Data],
-    DefaultSLAData = Table.PromoteHeaders(DefaultSLASheet, [PromoteAllScalars=true]),
-    
     // ===== JIRA DATA TRANSFORMATIONS =====
     JiraTyped = Table.TransformColumnTypes(JiraData, {
         {"key", type text},
@@ -143,18 +131,22 @@ let
             List.Contains(CompletedStatuses, [status])
     ),
     
-    // ===== PREPARE CAPABILITY MAPPING =====
+    // ===== PREPARE AND JOIN CAPABILITY MAPPING =====
+    // Load capability mapping directly when needed
+    CapabilityMappingSheet = ExcelSource{[Item="CapabilityMapping",Kind="Sheet"]}[Data],
+    CapabilityMappingData = Table.PromoteHeaders(CapabilityMappingSheet, [PromoteAllScalars=true]),
+    
     CapabilityMappingTyped = Table.TransformColumnTypes(CapabilityMappingData, {
         {"CapabilityKey", type text},
         {"IssueType", type text},
         {"IsActive", type logical}
     }),
     
-    ActiveMappings = Table.SelectRows(CapabilityMappingTyped, each [IsActive] = true),
+    CapabilityMappingActive = Table.SelectRows(CapabilityMappingTyped, each [IsActive] = true),
     
-    // ===== JOIN WITH CAPABILITY MAPPING =====
+    // Join with capability mapping
     JoinCapabilityMapping = Table.NestedJoin(AddIsCompleted, {"issue_type"}, 
-        ActiveMappings, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
+        CapabilityMappingActive, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
     
     ExpandCapabilityMapping = Table.ExpandTableColumn(JoinCapabilityMapping, "CapabilityMapping", 
         {"CapabilityKey"}, {"MappedCapabilityKey"}),
@@ -162,7 +154,11 @@ let
     AddFinalCapabilityKey = Table.AddColumn(ExpandCapabilityMapping, "FinalCapabilityKey", each 
         [MappedCapabilityKey]),
     
-    // ===== PREPARE CAPABILITY DIMENSION =====
+    // ===== PREPARE AND JOIN CAPABILITY DIMENSION =====
+    // Load capability dimension directly when needed
+    CapabilitySheet = ExcelSource{[Item="SLOTargets",Kind="Sheet"]}[Data],
+    CapabilityData = Table.PromoteHeaders(CapabilitySheet, [PromoteAllScalars=true]),
+    
     CapabilityTyped = Table.TransformColumnTypes(CapabilityData, {
         {"CapabilityKey", type text},
         {"ResponseTimeTargetDays", type number},
@@ -171,7 +167,18 @@ let
     
     ActiveCapabilities = Table.SelectRows(CapabilityTyped, each [IsActive] = true),
     
-    // ===== PREPARE DEFAULT SLA =====
+    // Join with capability
+    JoinCapability = Table.NestedJoin(AddFinalCapabilityKey, {"FinalCapabilityKey"}, 
+        ActiveCapabilities, {"CapabilityKey"}, "CapabilityData", JoinKind.LeftOuter),
+    
+    ExpandCapability = Table.ExpandTableColumn(JoinCapability, "CapabilityData", 
+        {"ResponseTimeTargetDays"}, {"CapabilityResponseTimeTarget"}),
+    
+    // ===== PREPARE AND JOIN DEFAULT SLA =====
+    // Load default SLA directly when needed
+    DefaultSLASheet = ExcelSource{[Item="DefaultSLA",Kind="Sheet"]}[Data],
+    DefaultSLAData = Table.PromoteHeaders(DefaultSLASheet, [PromoteAllScalars=true]),
+    
     DefaultSLATyped = Table.TransformColumnTypes(DefaultSLAData, {
         {"TicketType", type text},
         {"SLA_Days", type number},
@@ -179,14 +186,6 @@ let
     }),
     
     ActiveSLAs = Table.SelectRows(DefaultSLATyped, each [IsActive] = true),
-    
-    // ===== SLA TARGET CALCULATION =====
-    // Join with capability dimension
-    JoinCapability = Table.NestedJoin(AddFinalCapabilityKey, {"FinalCapabilityKey"}, 
-        ActiveCapabilities, {"CapabilityKey"}, "CapabilityData", JoinKind.LeftOuter),
-    
-    ExpandCapability = Table.ExpandTableColumn(JoinCapability, "CapabilityData", 
-        {"ResponseTimeTargetDays"}, {"CapabilityResponseTimeTarget"}),
     
     // Join with default SLA
     JoinDefaultSLA = Table.NestedJoin(ExpandCapability, {"issue_type"}, 
