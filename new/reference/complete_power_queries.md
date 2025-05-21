@@ -79,19 +79,18 @@ let
         {"updated", type datetime},
         {"resolution_date", type datetime},
         {"assignee_display_name", type text},
-        {"summary", type text},
-        {"active", type logical}
+        {"summary", type text}
+        // Removed active from type transformation
     }),
     
-    // Filter active tickets
-    FilterActive = Table.SelectRows(JiraTyped, each 
-        [active] = true and 
+    // Filter only essential data - removed [active] = true condition
+    FilterEssentialData = Table.SelectRows(JiraTyped, each 
         [key] <> null and 
         [created] <> null
     ),
     
     // Add project code
-    AddProject = Table.AddColumn(FilterActive, "project", each 
+    AddProject = Table.AddColumn(FilterEssentialData, "project", each 
         try Text.Start([key], Text.PositionOf([key], "-")) otherwise null),
     
     // Normalize columns for matching
@@ -138,15 +137,16 @@ let
     
     CapabilityMappingTyped = Table.TransformColumnTypes(CapabilityMappingData, {
         {"CapabilityKey", type text},
-        {"IssueType", type text},
-        {"IsActive", type logical}
+        {"IssueType", type text}
+        // Removed IsActive from type transformation
     }),
     
-    CapabilityMappingActive = Table.SelectRows(CapabilityMappingTyped, each [IsActive] = true),
+    // Remove IsActive filtering - use all capability mappings
+    CapabilityMappingAll = CapabilityMappingTyped,
     
     // Join with capability mapping
     JoinCapabilityMapping = Table.NestedJoin(AddIsCompleted, {"issue_type"}, 
-        CapabilityMappingActive, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
+        CapabilityMappingAll, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
     
     ExpandCapabilityMapping = Table.ExpandTableColumn(JoinCapabilityMapping, "CapabilityMapping", 
         {"CapabilityKey"}, {"MappedCapabilityKey"}),
@@ -161,15 +161,16 @@ let
     
     CapabilityTyped = Table.TransformColumnTypes(CapabilityData, {
         {"CapabilityKey", type text},
-        {"ResponseTimeTargetDays", type number},
-        {"IsActive", type logical}
+        {"ResponseTimeTargetDays", type number}
+        // Removed IsActive from type transformation
     }),
     
-    ActiveCapabilities = Table.SelectRows(CapabilityTyped, each [IsActive] = true),
+    // Use all capabilities instead of just active ones
+    AllCapabilities = CapabilityTyped,
     
     // Join with capability
     JoinCapability = Table.NestedJoin(AddFinalCapabilityKey, {"FinalCapabilityKey"}, 
-        ActiveCapabilities, {"CapabilityKey"}, "CapabilityData", JoinKind.LeftOuter),
+        AllCapabilities, {"CapabilityKey"}, "CapabilityData", JoinKind.LeftOuter),
     
     ExpandCapability = Table.ExpandTableColumn(JoinCapability, "CapabilityData", 
         {"ResponseTimeTargetDays"}, {"CapabilityResponseTimeTarget"}),
@@ -181,15 +182,16 @@ let
     
     DefaultSLATyped = Table.TransformColumnTypes(DefaultSLAData, {
         {"TicketType", type text},
-        {"SLA_Days", type number},
-        {"IsActive", type logical}
+        {"SLA_Days", type number}
+        // Removed IsActive from type transformation
     }),
     
-    ActiveSLAs = Table.SelectRows(DefaultSLATyped, each [IsActive] = true),
+    // Use all SLAs instead of just active ones
+    AllSLAs = DefaultSLATyped,
     
-    // Join with default SLA
+    // Join with default SLA - removed IsActive filter
     JoinDefaultSLA = Table.NestedJoin(ExpandCapability, {"issue_type"}, 
-        ActiveSLAs, {"TicketType"}, "DefaultSLA", JoinKind.LeftOuter),
+        AllSLAs, {"TicketType"}, "DefaultSLA", JoinKind.LeftOuter),
     
     ExpandDefaultSLA = Table.ExpandTableColumn(JoinDefaultSLA, "DefaultSLA", 
         {"SLA_Days"}, {"DefaultSLADays"}),
@@ -252,31 +254,27 @@ let
     StatusChangeSheet = Source{[Item="StatusChangeData",Kind="Sheet"]}[Data],
     PromotedHeaders = Table.PromoteHeaders(StatusChangeSheet, [PromoteAllScalars=true]),
     
-    // ===== INITIAL FILTERING =====
-    FilterActive = Table.SelectRows(PromotedHeaders, each 
-        [active] = true and 
+    // ===== INITIAL FILTERING - REMOVED ACTIVE FILTER =====
+    FilterNonNull = Table.SelectRows(PromotedHeaders, each 
         [key] <> null and 
         [change_created] <> null
     ),
     
     // ===== DATA TYPES =====
-    TypedData = Table.TransformColumnTypes(FilterActive, {
+    TypedData = Table.TransformColumnTypes(FilterNonNull, {
         {"id", Int64.Type},
         {"key", type text},
         {"change_created", type datetime},
         {"from_string", type text},
         {"to_string", type text},
-        {"active", type logical}
+        {"active", type logical}  // Keep type definition for compatibility
     }),
     
     // ===== SORT FOR DURATION CALCULATIONS =====
     SortedData = Table.Sort(TypedData, {{"key", Order.Ascending}, {"change_created", Order.Ascending}}),
     
-    // ===== ADD INDEX FOR WINDOW FUNCTIONS =====
-    AddIndex = Table.AddIndexColumn(SortedData, "RowIndex", 0),
-    
     // ===== CALCULATE PREVIOUS CHANGE TIME =====
-    // Step 1: Sort and index (global index not used after grouping)
+    // Step 1: Sort and index for window functions
     Sorted = Table.Sort(TypedData, {{"key", Order.Ascending}, {"change_created", Order.Ascending}}),
 
     // Step 2: Group by 'key' and compute PreviousChangeTime within each group
@@ -369,6 +367,8 @@ let
     // ===== ADD RELATIONSHIP KEYS =====
     AddChangeDate = Table.AddColumn(AddResponseTimeFlag, "ChangeDate", each Date.From([change_created])),
     
+    // ===== REMOVE UNNECESSARY COLUMNS =====
+    RemoveHelpers = Table.RemoveColumns(AddChangeDate, {"active"}),
     
     // ===== FINAL DATA TYPES =====
     FinalTypes = Table.TransformColumnTypes(RemoveHelpers, {
@@ -502,11 +502,8 @@ let
     ConfigSheet = Source{[Item="SLOTargets",Kind="Sheet"]}[Data],
     PromotedHeaders = Table.PromoteHeaders(ConfigSheet, [PromoteAllScalars=true]),
     
-    // ===== FILTER ACTIVE RECORDS =====
-    FilterActive = Table.SelectRows(PromotedHeaders, each [IsActive] = true),
-    
     // ===== DATA TYPES =====
-    TypedConfig = Table.TransformColumnTypes(FilterActive, {
+    TypedConfig = Table.TransformColumnTypes(PromotedHeaders, {
         {"CapabilityKey", type text},
         {"CapabilityName", type text},
         {"LeadTimeTargetDays", type number},
@@ -641,15 +638,13 @@ let
     MappingSheet = Source{[Item="IssueTypeMapping",Kind="Sheet"]}[Data],
     PromotedHeaders = Table.PromoteHeaders(MappingSheet, [PromoteAllScalars=true]),
     
-    // ===== FILTER ACTIVE MAPPINGS =====
-    FilterActive = Table.SelectRows(PromotedHeaders, each [IsActive] = true),
-    
     // ===== DATA TYPES =====
-    TypedMapping = Table.TransformColumnTypes(FilterActive, {
+    // Apply types directly to all rows (no IsActive filtering)
+    TypedMapping = Table.TransformColumnTypes(PromotedHeaders, {
         {"issue_type", type text},
         {"CapabilityKey", type text},
-        {"Notes", type text},
-        {"IsActive", type logical}
+        {"Notes", type text}
+        // Removed IsActive from type transformation list
     }),
     
     // ===== ADD VALIDATION =====
@@ -658,6 +653,7 @@ let
     AddCreatedBy = Table.AddColumn(AddEffectiveDate, "CreatedBy", each "System Administrator"),
     
     // ===== VALIDATION RULES =====
+    // Keep data quality validation but not IsActive filtering
     ValidateMappings = Table.SelectRows(AddCreatedBy, each 
         [issue_type] <> null and 
         [CapabilityKey] <> null and
@@ -711,7 +707,10 @@ let
     // ===== ADD METADATA =====
     AddSLAKey = Table.AddIndexColumn(CheckForData, "SLA_Key", 1, 1),
     AddSLAType = Table.AddColumn(AddSLAKey, "SLA_Type", each "Response Time"),
+    
+    // Note: Keeping IsActive column for schema compatibility but not filtering on it
     AddIsActive = Table.AddColumn(AddSLAType, "IsActive", each true),
+    
     AddCreatedDate = Table.AddColumn(AddIsActive, "CreatedDate", each Date.From(DateTime.LocalNow())),
     AddCreatedBy = Table.AddColumn(AddCreatedDate, "CreatedBy", each "System Administrator"),
     AddLastModified = Table.AddColumn(AddCreatedBy, "LastModified", each Date.From(DateTime.LocalNow())),
