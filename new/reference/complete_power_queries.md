@@ -62,20 +62,28 @@ in
 ### 2. Fact_Ticket_Summary
 ```m
 let
-    // ===== DATA SOURCE REFERENCE =====
-    // Reference to Jira_Snapshot query (now from Excel sheet)
-    Source = Jira_Snapshot,
+    // ===== DIRECT DATA SOURCES =====
+    // Load all required data directly from Excel sheets
+    ExcelSource = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
     
-    // ===== DATA FILTERING =====
-    // Remove rows with missing key data (same logic as original)
-    FilterActive = Table.SelectRows(Source, each 
-        [active] = true and 
-        [key] <> null and 
-        [created] <> null
-    ),
+    // 1. Load Jira data directly
+    JiraSnapshotSheet = ExcelSource{[Item="JiraSnapshot",Kind="Sheet"]}[Data],
+    JiraData = Table.PromoteHeaders(JiraSnapshotSheet, [PromoteAllScalars=true]),
     
-    // ===== DATA TYPE TRANSFORMATIONS =====
-    TypedTable = Table.TransformColumnTypes(FilterActive, {
+    // 2. Load capability mapping directly
+    CapabilityMappingSheet = ExcelSource{[Item="CapabilityMapping",Kind="Sheet"]}[Data],
+    CapabilityMappingData = Table.PromoteHeaders(CapabilityMappingSheet, [PromoteAllScalars=true]),
+    
+    // 3. Load capability dimension directly
+    CapabilitySheet = ExcelSource{[Item="SLOTargets",Kind="Sheet"]}[Data],
+    CapabilityData = Table.PromoteHeaders(CapabilitySheet, [PromoteAllScalars=true]),
+    
+    // 4. Load default SLA directly
+    DefaultSLASheet = ExcelSource{[Item="DefaultSLA",Kind="Sheet"]}[Data],
+    DefaultSLAData = Table.PromoteHeaders(DefaultSLASheet, [PromoteAllScalars=true]),
+    
+    // ===== JIRA DATA TRANSFORMATIONS =====
+    JiraTyped = Table.TransformColumnTypes(JiraData, {
         {"key", type text},
         {"issue_type", type text},
         {"status", type text},
@@ -86,19 +94,23 @@ let
         {"summary", type text},
         {"active", type logical}
     }),
-
-    // ===== ADD PROJECT CODE =====
-    // Extract project code from ticket key if not already present
-    AddProject = if Table.HasColumns(TypedTable, "project") then TypedTable 
-                 else Table.AddColumn(TypedTable, "project", each 
-                      try Text.Start([key], Text.PositionOf([key], "-")) otherwise null),
     
-    // ===== NORMALIZED COLUMNS FOR MATCHING =====
-    // Normalize text fields for case-insensitive joins
-    AddNormalizedIssueType = Table.AddColumn(AddProject, "normalized_issue_type", each
+    // Filter active tickets
+    FilterActive = Table.SelectRows(JiraTyped, each 
+        [active] = true and 
+        [key] <> null and 
+        [created] <> null
+    ),
+    
+    // Add project code
+    AddProject = Table.AddColumn(FilterActive, "project", each 
+        try Text.Start([key], Text.PositionOf([key], "-")) otherwise null),
+    
+    // Normalize columns for matching
+    AddNormalizedFields = Table.AddColumn(AddProject, "normalized_issue_type", each
         try Text.Lower(Text.Trim([issue_type])) otherwise null),
-        
-    AddNormalizedProject = Table.AddColumn(AddNormalizedIssueType, "normalized_project", each
+    
+    AddNormalizedProject = Table.AddColumn(AddNormalizedFields, "normalized_project", each
         try Text.Lower(Text.Trim([project])) otherwise null),
     
     AddNormalizedEpicName = if Table.HasColumns(AddNormalizedProject, "epic_name") then
@@ -107,13 +119,13 @@ let
     else
         AddNormalizedProject,
     
-    // ===== CALCULATED DATE COLUMNS =====
-    AddCreatedDate = Table.AddColumn(AddNormalizedEpicName, "CreatedDate", each Date.From([created])),
-    AddResolvedDate = Table.AddColumn(AddCreatedDate, "ResolvedDate", each 
+    // Add date columns
+    AddDateColumns = Table.AddColumn(AddNormalizedEpicName, "CreatedDate", each Date.From([created])),
+    AddResolvedDate = Table.AddColumn(AddDateColumns, "ResolvedDate", each 
         if [resolution_date] <> null then Date.From([resolution_date]) else null),
     AddUpdatedDate = Table.AddColumn(AddResolvedDate, "UpdatedDate", each Date.From([updated])),
     
-    // ===== RESOLUTION TIME CALCULATIONS =====
+    // Calculate resolution time
     AddResolutionTimeDays = Table.AddColumn(AddUpdatedDate, "ResolutionTimeDays", each
         if [resolution_date] <> null then
             Duration.Days([resolution_date] - [created])
@@ -121,7 +133,7 @@ let
             Duration.Days(DateTime.LocalNow() - [created])
     ),
     
-    // ===== BUSINESS RULE FLAGS =====
+    // Add status flags
     AddIsResolved = Table.AddColumn(AddResolutionTimeDays, "IsResolved", each [resolution_date] <> null),
     
     AddIsCompleted = Table.AddColumn(AddIsResolved, "Is_Completed", each
@@ -131,59 +143,66 @@ let
             List.Contains(CompletedStatuses, [status])
     ),
     
-    // ===== CAPABILITY MAPPING =====
-    // Create match key for capability mapping
-    AddMatchKey = Table.AddColumn(AddIsCompleted, "MatchKey", each [normalized_issue_type]),
-    
-    // Get active capability mappings from the Excel sheet
-    CapabilityMappingSource = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
-    CapabilityMappingSheet = CapabilityMappingSource{[Item="CapabilityMapping",Kind="Sheet"]}[Data],
-    CapabilityMappingHeaders = Table.PromoteHeaders(CapabilityMappingSheet, [PromoteAllScalars=true]),
-    CapabilityMappingTypes = Table.TransformColumnTypes(CapabilityMappingHeaders, {
+    // ===== PREPARE CAPABILITY MAPPING =====
+    CapabilityMappingTyped = Table.TransformColumnTypes(CapabilityMappingData, {
         {"CapabilityKey", type text},
         {"IssueType", type text},
-        {"EpicName", type text},
-        {"Project", type text},
-        {"Notes", type text},
         {"IsActive", type logical}
     }),
-    CapabilityMappingActive = Table.SelectRows(CapabilityMappingTypes, each [IsActive] = true),
     
-    // Join with capability mapping to get capability-level SLA
-    JoinCapabilityMapping = Table.NestedJoin(AddMatchKey, {"issue_type"}, 
-        CapabilityMappingActive, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
+    ActiveMappings = Table.SelectRows(CapabilityMappingTyped, each [IsActive] = true),
+    
+    // ===== JOIN WITH CAPABILITY MAPPING =====
+    JoinCapabilityMapping = Table.NestedJoin(AddIsCompleted, {"issue_type"}, 
+        ActiveMappings, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
+    
     ExpandCapabilityMapping = Table.ExpandTableColumn(JoinCapabilityMapping, "CapabilityMapping", 
         {"CapabilityKey"}, {"MappedCapabilityKey"}),
     
-    // Use mapped CapabilityKey only (no source CapabilityKey available)
-    AddFinalCapabilityKey = Table.AddColumn(ExpandCapabilityMapping, "FinalCapabilityKey", each
-        [MappedCapabilityKey]
-    ),
+    AddFinalCapabilityKey = Table.AddColumn(ExpandCapabilityMapping, "FinalCapabilityKey", each 
+        [MappedCapabilityKey]),
     
-    // ===== SLA TARGET CALCULATION (2-TIER HIERARCHY) =====
-    // Join with capability to get SLA targets
+    // ===== PREPARE CAPABILITY DIMENSION =====
+    CapabilityTyped = Table.TransformColumnTypes(CapabilityData, {
+        {"CapabilityKey", type text},
+        {"ResponseTimeTargetDays", type number},
+        {"IsActive", type logical}
+    }),
+    
+    ActiveCapabilities = Table.SelectRows(CapabilityTyped, each [IsActive] = true),
+    
+    // ===== PREPARE DEFAULT SLA =====
+    DefaultSLATyped = Table.TransformColumnTypes(DefaultSLAData, {
+        {"TicketType", type text},
+        {"SLA_Days", type number},
+        {"IsActive", type logical}
+    }),
+    
+    ActiveSLAs = Table.SelectRows(DefaultSLATyped, each [IsActive] = true),
+    
+    // ===== SLA TARGET CALCULATION =====
+    // Join with capability dimension
     JoinCapability = Table.NestedJoin(AddFinalCapabilityKey, {"FinalCapabilityKey"}, 
-        Dim_Capability, {"CapabilityKey"}, "CapabilityData", JoinKind.LeftOuter),
+        ActiveCapabilities, {"CapabilityKey"}, "CapabilityData", JoinKind.LeftOuter),
+    
     ExpandCapability = Table.ExpandTableColumn(JoinCapability, "CapabilityData", 
         {"ResponseTimeTargetDays"}, {"CapabilityResponseTimeTarget"}),
     
-    // Join with default SLA table as fallback
+    // Join with default SLA
     JoinDefaultSLA = Table.NestedJoin(ExpandCapability, {"issue_type"}, 
-        Default_SLA_Table, {"TicketType"}, "DefaultSLA", JoinKind.LeftOuter),
+        ActiveSLAs, {"TicketType"}, "DefaultSLA", JoinKind.LeftOuter),
+    
     ExpandDefaultSLA = Table.ExpandTableColumn(JoinDefaultSLA, "DefaultSLA", 
         {"SLA_Days"}, {"DefaultSLADays"}),
     
-    // Calculate final SLA target using 2-tier hierarchy
+    // Calculate SLA target using hierarchy
     AddSLATarget = Table.AddColumn(ExpandDefaultSLA, "ResponseTimeTargetDays", each
-        // Tier 1: Capability-level target
         if [CapabilityResponseTimeTarget] <> null then [CapabilityResponseTimeTarget]
-        // Tier 2: Default SLA fallback
         else if [DefaultSLADays] <> null then [DefaultSLADays]
-        // Ultimate fallback
         else 5
     ),
     
-    // ===== SLA ACHIEVEMENT CALCULATION =====
+    // Calculate SLA achievement
     AddMetSLA = Table.AddColumn(AddSLATarget, "Met_SLA", each
         if [IsResolved] = true and [ResponseTimeTargetDays] <> null then
             [ResolutionTimeDays] <= [ResponseTimeTargetDays]
@@ -196,24 +215,25 @@ let
         else false
     ),
     
-    // ===== STATUS FLAGS =====
+    // Add status timing
     AddDaysInCurrentStatus = Table.AddColumn(AddIsOverdue, "DaysInCurrentStatus", each
         Duration.Days(DateTime.LocalNow() - [updated])
     ),
     
-    // ===== DATA QUALITY VALIDATION =====
+    // Validate data
     ValidateData = Table.SelectRows(AddDaysInCurrentStatus, each 
-        [ResolutionTimeDays] >= 0 and  // No negative resolution times
-        ([IsResolved] = false or [resolution_date] <> null)  // Resolved tickets must have resolution date
+        [ResolutionTimeDays] >= 0 and
+        ([IsResolved] = false or [resolution_date] <> null)
     ),
     
-    // ===== REMOVE HELPER COLUMNS =====
-    RemoveHelpers = Table.RemoveColumns(ValidateData, 
-        {"normalized_issue_type", "normalized_project", "normalized_epic_name", "MatchKey", 
-         "CapabilityMapping", "MappedCapabilityKey", "CapabilityData", "DefaultSLA", 
-         "CapabilityResponseTimeTarget", "DefaultSLADays"}),
+    // Remove helper columns
+    RemoveHelpers = Table.RemoveColumns(ValidateData, {
+        "normalized_issue_type", "normalized_project", "normalized_epic_name",
+        "CapabilityData", "DefaultSLA", "CapabilityResponseTimeTarget", "DefaultSLADays",
+        "MappedCapabilityKey"
+    }),
     
-    // ===== FINAL TYPE OPTIMIZATION =====
+    // Final type conversion
     FinalTypes = Table.TransformColumnTypes(RemoveHelpers, {
         {"ResolutionTimeDays", Int64.Type},
         {"DaysInCurrentStatus", Int64.Type},
@@ -350,8 +370,6 @@ let
     // ===== ADD RELATIONSHIP KEYS =====
     AddChangeDate = Table.AddColumn(AddResponseTimeFlag, "ChangeDate", each Date.From([change_created])),
     
-    // ===== REMOVE HELPER COLUMNS =====
-    RemoveHelpers = Table.RemoveColumns(AddChangeDate, {"RowIndex", "PreviousChangeTime"}),
     
     // ===== FINAL DATA TYPES =====
     FinalTypes = Table.TransformColumnTypes(RemoveHelpers, {
