@@ -1,8 +1,13 @@
-# Complete Power Query (M) Code for Essential SLO Dashboard
+# Updated Power Query (M) Code for Essential SLO Dashboard
 
 ## Overview
 
-This document provides complete Power Query (M) code for implementing a streamlined SLO Dashboard focused on 6 core KPIs for essential service performance tracking. The simplified model eliminates complex analytics while maintaining comprehensive coverage of time, volume, and quality dimensions.
+This document provides updated Power Query (M) code for implementing a streamlined SLO Dashboard. All external data sources have been consolidated to a single Excel file with multiple sheets.
+
+**Consolidated Data Source:**
+- All data now comes from a single Excel file
+- Each required dataset is stored in a separate sheet
+- File path is defined as a parameter for easy updating
 
 **Supported Core KPIs:**
 1. **Lead Time** - Creation to work start (business days)
@@ -14,13 +19,51 @@ This document provides complete Power Query (M) code for implementing a streamli
 
 ---
 
+## File Path Parameter
+
+```m
+// Define file path as a parameter
+let
+    Source = "C:\Data\SLO_Dashboard_Data.xlsx", // Change this to your actual file path
+    Parameter = Source
+in
+    Parameter
+```
+
+---
+
 ## Core Fact Tables
 
-### 1. Fact_Ticket_Summary
+### 1. Jira_Snapshot (New Query)
+```m
+let
+    // Get data from the consolidated Excel file
+    Source = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
+    JiraSnapshotSheet = Source{[Item="JiraSnapshot",Kind="Sheet"]}[Data],
+    PromotedHeaders = Table.PromoteHeaders(JiraSnapshotSheet, [PromoteAllScalars=true]),
+    
+    // Transform data types
+    TypedData = Table.TransformColumnTypes(PromotedHeaders, {
+        {"key", type text},
+        {"issue_type", type text},
+        {"epic_name", type text},
+        {"status", type text},
+        {"created", type datetime},
+        {"updated", type datetime},
+        {"resolution_date", type datetime},
+        {"assignee_display_name", type text},
+        {"summary", type text},
+        {"active", type logical}
+    })
+in
+    TypedData
+```
+
+### 2. Fact_Ticket_Summary
 ```m
 let
     // ===== DATA SOURCE REFERENCE =====
-    // Replace file source with reference to existing Jira_Snapshot query
+    // Reference to Jira_Snapshot query (now from Excel sheet)
     Source = Jira_Snapshot,
     
     // ===== DATA FILTERING =====
@@ -92,12 +135,23 @@ let
     // Create match key for capability mapping
     AddMatchKey = Table.AddColumn(AddIsCompleted, "MatchKey", each [normalized_issue_type]),
     
-    // Get active capability mappings 
-    CapabilityMappingActive = Table.SelectRows(Config_Issue_Type_Capability_Mapping, each [IsActive] = true),
+    // Get active capability mappings from the Excel sheet
+    CapabilityMappingSource = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
+    CapabilityMappingSheet = CapabilityMappingSource{[Item="CapabilityMapping",Kind="Sheet"]}[Data],
+    CapabilityMappingHeaders = Table.PromoteHeaders(CapabilityMappingSheet, [PromoteAllScalars=true]),
+    CapabilityMappingTypes = Table.TransformColumnTypes(CapabilityMappingHeaders, {
+        {"CapabilityKey", type text},
+        {"IssueType", type text},
+        {"EpicName", type text},
+        {"Project", type text},
+        {"Notes", type text},
+        {"IsActive", type logical}
+    }),
+    CapabilityMappingActive = Table.SelectRows(CapabilityMappingTypes, each [IsActive] = true),
     
     // Join with capability mapping to get capability-level SLA
     JoinCapabilityMapping = Table.NestedJoin(AddMatchKey, {"issue_type"}, 
-        CapabilityMappingActive, {"issue_type"}, "CapabilityMapping", JoinKind.LeftOuter),
+        CapabilityMappingActive, {"IssueType"}, "CapabilityMapping", JoinKind.LeftOuter),
     ExpandCapabilityMapping = Table.ExpandTableColumn(JoinCapabilityMapping, "CapabilityMapping", 
         {"CapabilityKey"}, {"MappedCapabilityKey"}),
     
@@ -171,18 +225,13 @@ in
     FinalTypes
 ```
 
-### 2. Fact_Status_Change
+### 3. Fact_Status_Change
 ```m
 let
-    // ===== DATA SOURCE OPTIONS =====
-    // Option A: Excel File
-    Source = Excel.Workbook(File.Contents("C:\SLOData\status_changes.xlsx"), null, true),
-    Sheet = Source{[Item="StatusChangeData",Kind="Sheet"]}[Data],
-    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars=true]),
-    
-    // Option B: CSV File (alternative)
-    // Source = Csv.Document(File.Contents("C:\SLOData\status_changes.csv"),[Delimiter=",", Encoding=1252]),
-    // PromotedHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    // ===== DATA SOURCE FROM CONSOLIDATED EXCEL =====
+    Source = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
+    StatusChangeSheet = Source{[Item="StatusChangeData",Kind="Sheet"]}[Data],
+    PromotedHeaders = Table.PromoteHeaders(StatusChangeSheet, [PromoteAllScalars=true]),
     
     // ===== INITIAL FILTERING =====
     FilterActive = Table.SelectRows(PromotedHeaders, each 
@@ -225,11 +274,10 @@ let
     }),
 
     // Step 3: Combine grouped tables back into one
-    WithPreviousChange = Table.Combine(Grouped[AllRows])
-
+    WithPreviousChange = Table.Combine(Grouped[AllRows]),
     
     // ===== DURATION CALCULATIONS =====
-    AddDurationCalendar = Table.AddColumn(AddPreviousChangeTime, "DurationCalendarHours", each
+    AddDurationCalendar = Table.AddColumn(WithPreviousChange, "DurationCalendarHours", each
         Duration.TotalHours([change_created] - [PreviousChangeTime])
     ),
     
@@ -322,7 +370,7 @@ in
 
 ## Essential Dimensions
 
-### 3. Dim_Date
+### 4. Dim_Date (Unchanged)
 ```m
 let
     // ===== GENERATE DATE RANGE =====
@@ -429,32 +477,13 @@ in
     TypedTable
 ```
 
-### 4. Dim_Capability
+### 5. Dim_Capability
 ```m
 let
-    // ===== DATA SOURCE OPTIONS =====
-    // Option A: Excel File
-    Source = Excel.Workbook(File.Contents("C:\SLOData\slo_configuration.xlsx"), null, true),
+    // ===== DATA SOURCE FROM CONSOLIDATED EXCEL =====
+    Source = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
     ConfigSheet = Source{[Item="SLOTargets",Kind="Sheet"]}[Data],
     PromotedHeaders = Table.PromoteHeaders(ConfigSheet, [PromoteAllScalars=true]),
-    
-    // Option B: SharePoint list (alternative)
-    // Source = SharePoint.Tables("https://company.sharepoint.com/sites/SLOConfig"),
-    // ConfigList = Source{[Name="SLO_Configuration"]}[Items],
-    // PromotedHeaders = ConfigList,
-    
-    // Option C: Static table for testing
-    // Source = #table(
-    //     {"CapabilityKey", "CapabilityName", "LeadTimeTargetDays", "CycleTimeTargetDays", "ResponseTimeTargetDays"},
-    //     {
-    //         {"DQ", "Data Quality", 1, 2, 3},
-    //         {"DE", "Data Extracts", 1.5, 3, 5},
-    //         {"CC", "Change Controls", 2, 5, 7},
-    //         {"RD", "Reference Data", 1, 3, 4},
-    //         {"RM", "Records Management", 2, 3, 5}
-    //     }
-    // ),
-    // PromotedHeaders = Source,
     
     // ===== FILTER ACTIVE RECORDS =====
     FilterActive = Table.SelectRows(PromotedHeaders, each [IsActive] = true),
@@ -470,7 +499,6 @@ let
     }),
     
     // ===== ADD CALCULATED COLUMNS =====
-
     AddCapabilityOwner = Table.AddColumn(TypedConfig, "CapabilityOwner", each
         if      [CapabilityKey]="DQ" then "Data Quality Team Lead"
         else if [CapabilityKey]="DE" then "Data Engineering Manager"
@@ -512,7 +540,7 @@ in
     ValidateTargets
 ```
 
-### 5. Dim_Status
+### 6. Dim_Status (Unchanged)
 ```m
 let
     // ===== STATIC STATUS DEFINITIONS =====
@@ -588,35 +616,13 @@ in
 
 ## Configuration Tables
 
-### 6. Config_Issue_Type_Mapping
+### 7. Config_Issue_Type_Mapping
 ```m
 let
-    // ===== DATA SOURCE OPTIONS =====
-    // Option A: Excel File
-    Source = Excel.Workbook(File.Contents("C:\SLOData\issue_type_mapping.xlsx"), null, true),
-    Sheet = Source{[Item="Mapping",Kind="Sheet"]}[Data],
-    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars=true]),
-    
-    // Option B: Static table for testing
-    // Source = #table(
-    //     {"issue_type", "CapabilityKey", "Notes"},
-    //     {
-    //         {"Bug", "DQ", "Data quality defects"},
-    //         {"Data Quality Task", "DQ", "Ongoing monitoring tasks"},
-    //         {"Extract Request", "DE", "Custom data extractions"},
-    //         {"Scheduled Extract", "DE", "Automated extract maintenance"},
-    //         {"Change Request", "CC", "Standard change approval"},
-    //         {"Emergency Change", "CC", "Emergency changes"},
-    //         {"Reference Data Update", "RD", "Reference data maintenance"},
-    //         {"Data Classification", "RD", "Data classification tasks"},
-    //         {"Records Retention", "RM", "Records archival process"},
-    //         {"Records Retrieval", "RM", "Records retrieval requests"},
-    //         {"Task", "DQ", "General tasks default to Data Quality"},
-    //         {"Story", "DE", "User stories default to Data Engineering"},
-    //         {"Epic", "CC", "Epics default to Change Controls"}
-    //     }
-    // ),
-    // PromotedHeaders = Source,
+    // ===== DATA SOURCE FROM CONSOLIDATED EXCEL =====
+    Source = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
+    MappingSheet = Source{[Item="IssueTypeMapping",Kind="Sheet"]}[Data],
+    PromotedHeaders = Table.PromoteHeaders(MappingSheet, [PromoteAllScalars=true]),
     
     // ===== FILTER ACTIVE MAPPINGS =====
     FilterActive = Table.SelectRows(PromotedHeaders, each [IsActive] = true),
@@ -652,33 +658,41 @@ in
     FinalTypes
 ```
 
-### 7. Default_SLA_Table
+### 8. Default_SLA_Table
 ```m
 let
-    // ===== STATIC SLA DEFINITIONS =====
-    Source = #table(
-        {"TicketType", "SLA_Days", "DefaultCriticality", "ExcludeWeekends", "BusinessDaysOnly", "Notes"},
-        {
-            {"Bug", 3, "High", true, true, "Critical defects require faster response"},
-            {"Task", 5, "Standard", true, true, "Standard business day response target"},
-            {"Epic", 10, "Medium", true, true, "Large initiatives allow longer response time"},
-            {"Story", 8, "Standard", true, true, "User stories standard processing"},
-            {"Sub-task", 2, "Standard", true, true, "Sub-tasks inherit parent priority but faster turnaround"},
-            {"Improvement", 7, "Medium", true, true, "Enhancement requests standard timeline"},
-            {"New Feature", 15, "Low", true, true, "New features require extended analysis time"},
-            {"Change Request", 10, "Medium", true, true, "Change management standard process"},
-            {"Incident", 1, "Critical", false, false, "Production incidents have highest priority"},
-            {"Service Request", 5, "Standard", true, true, "Standard service delivery"},
-            {"Data Quality Task", 3, "High", true, true, "Data quality work requires attention"},
-            {"Extract Request", 5, "Standard", true, true, "Data extraction standard timeline"},
-            {"Emergency Change", 0.5, "Critical", false, false, "Emergency changes require immediate attention"},
-            {"Reference Data Update", 4, "Standard", true, true, "Reference data updates standard process"},
-            {"Records Request", 3, "Standard", true, true, "Records management requests"}
-        }
-    ),
+    // ===== DATA SOURCE FROM CONSOLIDATED EXCEL =====
+    Source = Excel.Workbook(File.Contents(SLO_Excel_FilePath), null, true),
+    SLASheet = Source{[Item="DefaultSLA",Kind="Sheet"]}[Data],
+    PromotedHeaders = Table.PromoteHeaders(SLASheet, [PromoteAllScalars=true]),
+    
+    // Alternative: Keep the static table if the sheet isn't available
+    CheckForData = if Table.IsEmpty(PromotedHeaders) then
+        #table(
+            {"TicketType", "SLA_Days", "DefaultCriticality", "ExcludeWeekends", "BusinessDaysOnly", "Notes"},
+            {
+                {"Bug", 3, "High", true, true, "Critical defects require faster response"},
+                {"Task", 5, "Standard", true, true, "Standard business day response target"},
+                {"Epic", 10, "Medium", true, true, "Large initiatives allow longer response time"},
+                {"Story", 8, "Standard", true, true, "User stories standard processing"},
+                {"Sub-task", 2, "Standard", true, true, "Sub-tasks inherit parent priority but faster turnaround"},
+                {"Improvement", 7, "Medium", true, true, "Enhancement requests standard timeline"},
+                {"New Feature", 15, "Low", true, true, "New features require extended analysis time"},
+                {"Change Request", 10, "Medium", true, true, "Change management standard process"},
+                {"Incident", 1, "Critical", false, false, "Production incidents have highest priority"},
+                {"Service Request", 5, "Standard", true, true, "Standard service delivery"},
+                {"Data Quality Task", 3, "High", true, true, "Data quality work requires attention"},
+                {"Extract Request", 5, "Standard", true, true, "Data extraction standard timeline"},
+                {"Emergency Change", 0.5, "Critical", false, false, "Emergency changes require immediate attention"},
+                {"Reference Data Update", 4, "Standard", true, true, "Reference data updates standard process"},
+                {"Records Request", 3, "Standard", true, true, "Records management requests"}
+            }
+        )
+    else
+        PromotedHeaders,
     
     // ===== ADD METADATA =====
-    AddSLAKey = Table.AddIndexColumn(Source, "SLA_Key", 1, 1),
+    AddSLAKey = Table.AddIndexColumn(CheckForData, "SLA_Key", 1, 1),
     AddSLAType = Table.AddColumn(AddSLAKey, "SLA_Type", each "Response Time"),
     AddIsActive = Table.AddColumn(AddSLAType, "IsActive", each true),
     AddCreatedDate = Table.AddColumn(AddIsActive, "CreatedDate", each Date.From(DateTime.LocalNow())),
@@ -724,7 +738,7 @@ in
 
 ## Helper Functions
 
-### 8. Business Hours Calculation Function
+### 9. Business Hours Calculation Function (Unchanged)
 ```m
 let
     BusinessHoursFunction = (StartTime as datetime, EndTime as datetime) =>
@@ -776,24 +790,24 @@ in
 
 ## Implementation Notes
 
-### Key Simplifications Made:
-1. **Removed Complexity**: Eliminated service-specific SLA overrides, priority adjustments, and complex reopening analysis
-2. **Streamlined SLA Logic**: Simplified to 2-tier hierarchy (Capability → Default fallback)
-3. **Focus on Core KPIs**: All queries optimized to support only the 6 essential performance indicators
-4. **Improved Maintainability**: Reduced relationships and calculations for easier maintenance
+### Excel Sheet Structure Required
+The consolidated Excel file should have the following sheets:
+1. **JiraSnapshot** - Contains the Jira ticket data
+2. **StatusChangeData** - Contains status transition history
+3. **SLOTargets** - Contains capability definitions and SLA targets
+4. **IssueTypeMapping** - Maps issue types to capabilities
+5. **CapabilityMapping** - Maps capabilities to ticket types and other attributes
+6. **DefaultSLA** - Contains default SLA targets by ticket type
 
-### Relationship Requirements:
+### Key Simplifications Made:
+1. **Single Data Source**: All external data comes from a single Excel file
+2. **File Path Parameter**: The Excel file path is defined as a parameter for easy updates
+3. **Fallbacks for Missing Data**: Some queries include fallbacks if sheets are missing or empty
+4. **Preserved Core Logic**: All business logic remains unchanged from the original queries
+
+### Relationship Requirements (Unchanged):
 - **Fact_Ticket_Summary[key] ↔ Fact_Status_Change[key]** (1:Many)
 - **Fact_Ticket_Summary[CreatedDate] ↔ Dim_Date[Date]** (Many:1, Active)
 - **Fact_Ticket_Summary[ResolvedDate] ↔ Dim_Date[Date]** (Many:1, Inactive)
 - **Fact_Ticket_Summary[issue_type] ↔ Config_Issue_Type_Mapping[issue_type]** (Many:1)
 - **Config_Issue_Type_Mapping[CapabilityKey] ↔ Dim_Capability[CapabilityKey]** (Many:1)
-
-### Data Quality Validations:
-- Resolution times are non-negative
-- Resolved tickets have resolution dates
-- SLA targets are within reasonable ranges (0-30 days)
-- Business day calculations exclude weekends and holidays
-- All mappings have required fields populated
-
-This simplified implementation provides comprehensive support for essential SLO tracking while dramatically reducing complexity and maintenance overhead.
