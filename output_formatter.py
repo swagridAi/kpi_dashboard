@@ -7,7 +7,7 @@ def convert_data_for_power_bi(df):
     This function is a placeholder for any specific transformations needed for Power BI compatibility.
     """
     import pandas as pd
-    from datetime import import datetime, timedelta
+    from datetime import datetime, timedelta
     
     # Assuming DATES is a column in your DataFrame containing datetime objects
     def filter_last_x_months(df, date_column, months):
@@ -67,8 +67,8 @@ def convert_data_for_power_bi(df):
     # I want to convert the RESOLUTION_DATE_YYYY_MM column to a datetime format
     df[FieldNames.RESOLUTION_DATE_YYYY_MM] = pd.to_datetime(df[FieldNames.RESOLUTION_DATE_YYYY_MM], format='%Y-%m', errors='coerce')
     
-    # Convert the ResolutionDate_yyyy_mm column to the format "Jan'24"
-    df['ResolutionDate_string'] = pd.to_datetime(df[FieldNames.RESOLUTION_DATE_YYYY_MM], format='%Y-%m').dt.strftime('%b\'%y')
+    # Convert the ResolutionDate_yyyy_mm column to the format "Jan-24"
+    df['ResolutionDate_string'] = pd.to_datetime(df[FieldNames.RESOLUTION_DATE_YYYY_MM], format='%Y-%m').dt.strftime('%b-%y')
     
     # Assuming 'df' is your DataFrame and DATES is the column with datetime objects
     df[FieldNames.DATES] = pd.to_datetime(df[FieldNames.RESOLUTION_DATE_YYYY_MM])  # Ensure the dates column is in datetime format
@@ -76,20 +76,20 @@ def convert_data_for_power_bi(df):
     df = filter_last_x_months(df, FieldNames.DATES, 7)
     
     # Calculate average KPI Value grouped by Service-KPI
-    average_kpi = df.groupby(FieldNames.SERVICE_KPI)['KPI Value'].mean().reset_index()
-    average_kpi.rename(columns={'KPI Value': 'Average KPI Value'}, inplace=True)
+    average_kpi = df.groupby(FieldNames.SERVICE_KPI)["KPI Value"].mean().reset_index()
+    average_kpi.rename(columns={"KPI Value": "Average KPI Value"}, inplace=True)
     
     # Calculate the change from the second most recent month to the most recent month
     def calculate_change(group):
         group = group.sort_values(FieldNames.DATES, ascending=True)
         if len(group) >= 2:
-            return group.iloc[-1]['KPI Value'] - group.iloc[-2]['KPI Value']
+            return group.iloc[-1]["KPI Value"] - group.iloc[-2]["KPI Value"]
         return None
     
     change_kpi = (
         df.groupby(FieldNames.SERVICE_KPI)
         .apply(calculate_change)
-        .reset_index(name='Change in KPI Value')
+        .reset_index(name="Change in KPI Value")
     )
     
     # Merge the results
@@ -100,17 +100,17 @@ def convert_data_for_power_bi(df):
     
     # Return the transformed DataFrame
     return df, most_recent_month_df, monthly_insights
-
+    
 
 def get_requestor_data_clean(df):
-
+    
     # Define the columns of interest
     columns_of_interest = [
-        'Key',
+        "Key",
         FieldNames.SERVICE_USER_COLUMN,
-        'Category',
-        'Service',
-        'PreferredIssueType',
+        "Category",
+        "Service",
+        "PreferredListType",
         FieldNames.RESOLUTION_DATE_YYYY_MM
     ]
     
@@ -122,16 +122,16 @@ def get_requestor_data_clean(df):
     
     # Group by month, category, service, and project initiative
     grouped_df = df_cleaned.groupby(
-        ['ResolutionDate_yyyy_mm', 'Category', 'Service', FieldNames.SERVICE_USER_COLUMN]
-    ).size().reset_index(name='Number of requests')
+        ["ResolutionDate_yyyy_mm", "Category", "Service", FieldNames.SERVICE_USER_COLUMN]
+    ).size().reset_index(name="Number of Requests")
     
     # Calculate the total requests per month, category, and service group
     total_requests_per_group = grouped_df.groupby(
-        ['ResolutionDate_yyyy_mm', 'Category', 'Service']
-    )['Number of requests'].transform('sum')
+        ["ResolutionDate_yyyy_mm", "Category", "Service"]
+    )["Number of Requests"].transform("sum")
     
     # Calculate the proportion of requests within each group
-    grouped_df['total_requests_per_group'] = total_requests_per_group
-    grouped_df['Proportion of requests'] = grouped_df['Number of requests'] / total_requests_per_group
+    grouped_df["total_requests_per_group"] = total_requests_per_group
+    grouped_df["Proportion of Requests"] = grouped_df["Number of Requests"] / total_requests_per_group
     
     return df_cleaned, grouped_df

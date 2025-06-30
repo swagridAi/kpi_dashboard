@@ -3,19 +3,62 @@ from dateutil.parser import parse
 from datetime import datetime
 import calendar
 from config import FieldNames, ProcessingConfig
+import pandas as pd
 
+
+def merge_mapping_tables(matched_entries, mapping_table):
+    # Drop the unnecessary columns from the mapping_table
+    columns_to_drop = [FieldNames.ISSUE_TYPE, FieldNames.REQUEST_TYPE]  # Columns to drop
+    mapping_table = mapping_table.drop(columns=columns_to_drop, errors='ignore')
+    matched_entries = matched_entries.drop(columns=columns_to_drop, errors='ignore')
+    
+    # Perform the merge
+    return pd.merge(
+        matched_entries,
+        mapping_table,  # Select relevant columns
+        how='left',
+        left_on=[FieldNames.PROJECT, FieldNames.PREFERRED_ISSUE_TYPE, FieldNames.FROM],  # Columns in matched_entries
+        right_on=[FieldNames.PROJECT, FieldNames.PREFERRED_ISSUE_TYPE, FieldNames.STATUS]  # Columns in mapping_table
+    )
+
+def generate_unmapped_requestors_report(matched_entries):
+    """Generate report of unmapped requestors"""
+    unmapped_requestors = matched_entries[matched_entries[FieldNames.SERVICE_USER_COLUMN].isnull()][FieldNames.PROJECT_INITIATIVE_L1_COLUMN, FieldNames.PROJECT_INITIATIVE_L2_COLUMN]
+    unmapped_requestors.to_csv('unmapped_requestors.csv', index=False)
+    return unmapped_requestors
+
+def merge_requestor_data(matched_entries, requestor_df):
+    """Add the requestor column to matched_entries"""
+    return matched_entries.merge(
+        requestor_df,
+        how='left',
+        left_on=[FieldNames.PROJECT_INITIATIVE_L1_COLUMN, FieldNames.PROJECT_INITIATIVE_L2_COLUMN],
+        right_on=[FieldNames.PROJECT_INITIATIVE_L1_COLUMN, FieldNames.PROJECT_INITIATIVE_L2_COLUMN]
+    )
+
+def add_preferred_issue_type(df, request_type_col, issue_type_col, preferred_issue_type_col):
+    """
+    Add a PREFERRED_ISSUE_TYPE column to the DataFrame based on REQUEST_TYPE and ISSUE_TYPE.
+    """
+    df[preferred_issue_type_col] = df.apply(
+        lambda row: row[request_type_col].strip()
+        if pd.notna(row[request_type_col]) and row[request_type_col].strip() != "" and row[request_type_col].strip() != "N/A"
+        else row[issue_type_col],
+        axis=1
+    )
+    return df
 
 def update_ticket_values(ticket_values: dict) -> dict:
     """
     Updates the ticket_values dictionary by adding a new key 'close_date'
     based on the value of 'project-issuetype'.
     """
-    if ticket_values.get("project-issuetype") in ["DOOMBAU-Data Quality Rule", "DOOMBAU-Consumer Validation"]:
+    if ticket_values.get("project-issuetype") in ["DOMMBAU-Data Quality Rule", "DOMMBAU-Consumer Validation"]:
         fix_version = ticket_values.get("FixVersion")
         if fix_version:
             try:
                 # Extract year and month abbreviation from FixVersion
-                parts = fix_version.split("_")
+                parts = fix_version.split(" ")
                 month_day = parts[-1]  # Extract the MonthDay part
                 month_abbr = month_day[:-2]  # Extract the month abbreviation (e.g., Feb)
                 year = int("20" + month_day[-2:])  # Extract the year (e.g., 25 -> 2025)
@@ -65,11 +108,11 @@ def calculate_duration(start_date: str, end_date: str) -> Any:
         total_hours = (end_dt - start_dt).total_seconds() / 3600
         if total_hours < 0:
             total_hours = 0
-        #print(f"total_hours is type {type(total_hours)} and value {total_hours}")
+        print(f"total_hours is type {type(total_hours)} and value {total_hours}")
         return total_hours
     except (ValueError, TypeError):
         print(f"Error parsing dates: {start_date} or {end_date}")
-        return "Invalid Date"
+        return 'Invalid Date'
 
 def process_changelog_entries(
     changelog_entries: List[Dict[str, Any]], matched_entries: List[Dict[str, Any]], ticket_values: Dict[str, Any]

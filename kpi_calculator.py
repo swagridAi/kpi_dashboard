@@ -1,4 +1,4 @@
-# Standard Imports
+# Standard imports
 from typing import Any, Dict, List
 
 # Third-party imports
@@ -36,21 +36,21 @@ def standard_throughput_calculation(ticket_data_df, kpi_targets_df):
     # Step 3: Filter kpi_targets_df so that the column 'KPI' only includes these values Lead Cycle Response
     kpi_targets_df = kpi_targets_df[kpi_targets_df['KPI'].isin(['Throughput'])]
     
-    # Step 4 : Drop the 'KPI' column in kpi_targets_df
+    # Step 4: Drop the 'KPI' column in kpi_targets_df
     kpi_targets_df = kpi_targets_df.drop(columns=['KPI'])
     
     # Step 5: Merge with KPI targets to add target values
     result = pd.merge(grouped, kpi_targets_df, how='left', on=['Service'])
     
     # Step 6: Add a new column KPI Value in preferred units
-    # Apply the function to calculate KPI Value
+    # Apply the function to calculate KPI value
     result['KPI Value'] = result.apply(calculate_preferred_throughput, axis=1)
     
     # Step 7: Add a new column KPI met where if the value of KPI Value is less than or equal to Target, then it is True, else False
-    result[FieldNames.KPI_MET] = result.apply(lambda row: row['KPI Value'] >= row[FieldNames.TARGET] if pd.notna(row[FieldNames.TARGET]) else False, axis=1)
+    result[FieldNames.KPI_MET] = result.apply(lambda row: row['KPI Value'] <= row[FieldNames.TARGET] if pd.notna(row[FieldNames.TARGET]) else False, axis=1)
     
     # Step 11: Add a new column called SERVICE_KPI which is a combination of 'Service' and TIME_TYPE_COLUMN
-    result[FieldNames.SERVICE_KPI] = result['Service'] + '_Throughput'
+    result[FieldNames.SERVICE_KPI] = result['Service'] + '_' + 'Throughput'
     
     result['KPI Type'] = 'Throughput'
     
@@ -115,9 +115,9 @@ def get_time_status_per_month(ticket_data_df, kpi_targets_df):
     # Step 2: Group by 'Service' and 'ResolutionDate', and calculate count, average duration, and total hours
     ticket_resolution_times = (
         ticket_data_df.groupby(['Service', FieldNames.RESOLUTION_DATE_YYYY_MM])
-        .agg(
-            AverageDuration=('TicketDuration', 'mean')
-        )
+        .agg({
+            'AverageDuration': ('TicketDuration', 'mean')
+        })
         .reset_index()
     )
     
@@ -136,10 +136,10 @@ def get_time_status_per_month(ticket_data_df, kpi_targets_df):
     ticket_resolution_times = ticket_resolution_times[result.columns]
     
     # Get only KPIs that we are interested in
-    # Step 1: Filter kpi_targets_df so that the column 'KPI' only includes these values Lead Cycle Response
+    # Step 1: Filter kpi_targets_df so that the column 'KPI' only includes these values Lead Cycle Response Resolution
     kpi_targets_df = kpi_targets_df[kpi_targets_df['KPI'].isin(['Lead', 'Cycle', 'Response', 'Resolution'])]
     
-    # Step 2 : Rename 'KPI' to TIME_TYPE_COLUMN in kpi_targets_df
+    # Step 2: Rename 'KPI' to TIME_TYPE_COLUMN in kpi_targets_df
     kpi_targets_df.rename(columns={'KPI': FieldNames.TIME_TYPE_COLUMN}, inplace=True)
     
     # Merge the ticket resolution times with the result DataFrame
@@ -179,10 +179,10 @@ def get_issue_rate(df: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     # Step 3: Group by 'Service' and 'ResolutionDate'
     grouped = (
         df.groupby(['Service', FieldNames.RESOLUTION_DATE_YYYY_MM])
-        .agg(
-            total_tickets=('ResolutionDate', 'count'),
-            issues_count=('HasIssues', 'sum')  # Sum up the boolean values for issues count
-        )
+        .agg({
+            'total_tickets': ('ResolutionDate', 'count'),
+            'issues_count': ('HasIssues', 'sum')  # Sum up the boolean values for issues count
+        })
         .reset_index()
     )
     
