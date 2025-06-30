@@ -79,6 +79,13 @@ class FieldNames:
     KPI_VALUE = "KPI Value"                       # Calculated metrics
     KPI_TYPE = "KPI Type"                         # Metric categorization
 
+    # Data processor
+    CLOSE_DATE = "close_date"                    # Used 5+ times, calculated field
+    CHANGE_CREATED = "ChangeCreated"             # Used 6+ times, changelog field
+    STATUS_DURATION = "StatusDuration"           # Used 5+ times, calculated metric
+    AUTHOR = "Author"                            # Used 3+ times, changelog field
+    FIELD = "Field"                              # Used 3+ times, changelog field
+
 @dataclass(frozen=True)
 class JiraFields:
     """Jira-specific field mappings"""
@@ -138,7 +145,11 @@ class ProcessingConfig:
     
     # Date format for calculate close dates
     CLOSE_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.000+1000"
-    
+    DEFAULT_CLOSE_TIME_HOUR = 14
+    DEFAULT_CLOSE_TIME_MINUTE = 54
+    DEFAULT_CLOSE_TIME_SECOND = 44
+    YEAR_PREFIX = "20"
+
     # Analysis settings
     HISTORICAL_MONTHS = 7
 
@@ -146,6 +157,72 @@ class ProcessingConfig:
     FIRST_ELEMENT_INDEX = 0
     PROJECT_KEY_INDEX = 0
 
+    # Time conversion constants
+    SECONDS_TO_HOURS = 3600                      # Time conversion business rule
+    MINIMUM_DURATION = 0                         # Duration validation threshold
+    
+    # String processing constants
+    EMPTY_STRING = ""                            # Used 8+ times for validation
+    NULL_VALUE_INDICATOR = "N/A"                 # Business rule for null detection
+    SPACE_SEPARATOR = " "                        # Used 3+ times for splitting
+    
+    # Default values
+    UNKNOWN_VALUE = "Unknown"                    # Used 6+ times as fallback
+    INVALID_DATE_VALUE = "Invalid Date"          # Used 4+ times as error indicator
+    
+    # Array indexing constants
+    LAST_ELEMENT_INDEX = -1                      # Used 3+ times for indexing
+    YEAR_SUFFIX_INDEX = -2                       # Used 2+ times for slicing
+
+
+@dataclass(frozen=True)
+class ValidationConfig:
+
+    # Year validation range (reasonable business years)
+    MIN_VALID_YEAR = 2000                        # Business rule for year validation
+    MAX_VALID_YEAR = 2100                        # Business rule for year validation  
+    
+    # Duration validation (in hours)
+    MIN_REASONABLE_DURATION = 0                  # Data quality threshold
+    MAX_REASONABLE_DURATION = 8760               # Data quality threshold (1 year)
+    
+    # DataFrame validation
+    MIN_DATAFRAME_ROWS = 0
+    MAX_DATAFRAME_ROWS = 1000000              # Performance limit
+    
+    # Required DataFrame columns for different operations
+    REQUIRED_COLUMNS_MERGE_MAPPING = {
+        FieldNames.PROJECT, 
+        FieldNames.PREFERRED_ISSUE_TYPE, 
+        FieldNames.FROM
+    }
+    
+    REQUIRED_COLUMNS_MERGE_REQUESTOR = {
+        FieldNames.PROJECT_INITIATIVE_L1_COLUMN,
+        FieldNames.PROJECT_INITIATIVE_L2_COLUMN
+    }
+    
+    REQUIRED_COLUMNS_UNMAPPED_REPORT = {
+        FieldNames.SERVICE_USER_COLUMN,
+        FieldNames.PROJECT_INITIATIVE_L1_COLUMN,
+        FieldNames.PROJECT_INITIATIVE_L2_COLUMN
+    }
+
+    # FixVersion format validation
+    FIXVERSION_MIN_PARTS = 2                     # String validation rule
+    FIXVERSION_MONTH_LENGTH = 3                  # String validation rule
+    FIXVERSION_YEAR_SUFFIX_LENGTH = 2            # String validation rule
+
+    # File operation validation
+    MAX_FILE_SIZE_MB = 100
+    ALLOWED_FILE_EXTENSIONS = {'.csv', '.xlsx', '.json'}
+
+    # Business rule validation
+    VALID_MONTH_ABBREVIATIONS = set(ProcessingConfig.MONTH_ABBREVIATIONS.keys())
+    
+    # Error tolerance settings
+    MAX_CONSECUTIVE_ERRORS = 10
+    ERROR_RATE_THRESHOLD = 0.1  # 10% error rate threshold
 
 @dataclass(frozen=True)
 class BusinessRules:
@@ -219,6 +296,62 @@ class OutputConfig:
         "CHANGE": 2,
         "AVERAGE": 3
     }
+
+@dataclass(frozen=True)
+class PandasConfig:
+    """Pandas-specific configuration parameters"""
+    
+    # Merge and join parameters
+    MERGE_HOW_LEFT = "left"
+    ERROR_HANDLING_IGNORE = "ignore"
+    INDEX_FALSE = False
+    
+    # Axis parameters
+    AXIS_COLUMNS = 1
+
+@dataclass(frozen=True)
+class ErrorMessages:
+    """Standardized error messages for logging and debugging"""
+    
+    # Original error messages
+    FIX_VERSION_PROCESSING_ERROR = "Error processing FixVersion"
+    DATE_PARSING_ERROR = "Error parsing dates"
+    DURATION_DEBUG_MESSAGE = "total_hours is type {type} and value {value}"
+    
+    # New validation error messages
+    INVALID_DATAFRAME_STRUCTURE = "Invalid DataFrame structure"
+    MISSING_REQUIRED_COLUMNS = "Missing required columns"
+    INVALID_DATA_TYPE = "Invalid data type"
+    INVALID_YEAR_RANGE = "Year outside valid range"
+    INVALID_MONTH_ABBREVIATION = "Invalid month abbreviation"
+    INVALID_DURATION_RANGE = "Duration outside reasonable range"
+    DIVISION_BY_ZERO_ERROR = "Division by zero in calculation"
+    FILE_OPERATION_ERROR = "File operation failed"
+    EMPTY_INPUT_ERROR = "Empty or null input provided"
+    STRING_TOO_LONG_ERROR = "String exceeds maximum length"
+    CONVERSION_ERROR = "Type conversion failed"
+    BUSINESS_RULE_VIOLATION = "Business rule validation failed"
+    
+    # Error context templates
+    VALIDATION_ERROR_TEMPLATE = "Validation failed for {function}: {error}"
+    PROCESSING_ERROR_TEMPLATE = "Processing error in {function}: {error}"
+    DATA_QUALITY_ERROR_TEMPLATE = "Data quality issue in {function}: {error}"
+
+@dataclass(frozen=True)
+class LoggingConfig:
+    """Logging configuration for error handling and monitoring"""
+    
+    # Logging levels
+    ERROR_LEVEL = "ERROR"
+    WARNING_LEVEL = "WARNING"
+    INFO_LEVEL = "INFO"
+    DEBUG_LEVEL = "DEBUG"
+    
+    # Log message templates
+    VALIDATION_LOG_TEMPLATE = "[{level}] {function}: {message}"
+    ERROR_COUNT_TEMPLATE = "[{level}] Error count: {count} in {function}"
+    PERFORMANCE_LOG_TEMPLATE = "[{level}] Performance: {function} took {duration}ms"
+
 
 @dataclass(frozen=True)
 class PowerBIConfig:
