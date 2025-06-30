@@ -6,7 +6,7 @@ And calculation system
 """
 
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Final
 
 # ========
 # FIELD NAMES - Organised into logical groups
@@ -45,9 +45,78 @@ class FieldNames:
     # File-specific columns
     SERVICE_USER_COLUMN = "Service user"
 
+    # Ticket data fields (new additions for jira_parser)
+    KEY = "Key"
+    RESOLUTION_DATE = "ResolutionDate"
+    PROJECT_ISSUE_TYPE = "project-issuetype"
+    CREATED = "Created"
+    HAS_ISSUES = "HasIssues"
+    CCF_DATE = "CCFDate"
+    TICKET_DURATION = "TicketDuration"
+    FIX_VERSION = "FixVersion"
+    TIME_SPENT_SECONDS = "TimespentSeconds"
+    COMPONENT_NAME = "ComponentName"
+    COMPONENT_DESCRIPTION = "ComponentDescription"
+    PARENT_VALUE = "parent_value"
+    CHILD_VALUE = "child_value"
+
+    # PowerBi fields
+    AVERAGE_KPI_VALUE = "Average KPI Value"        # Eliminated string literal duplication
+    CHANGE_IN_KPI_VALUE = "Change in KPI Value"    # PowerBI column consistency  
+    KPI_MET_PERCENTAGE = "KPI_Met_Percentage"      # SLO calculation standardization
+    CHANGE_IMPACT = "change_impact"                # Impact assessment columns
+    CHANGE_DIRECTION = "change_direction"          # Arrow indicator columns
+    STAT = "Stat"                                  # Matrix view structure
+    ARROW = "Arrow"                               # Visual indicator columns
+    VALUE = "Value"                               # Generic value columns
+    LINE_ORDER = "line_order"                     # Matrix ordering
+    DATE_ORDER = "DateOrder"                      # PowerBI date sorting
+    RESOLUTION_DATE_STRING = "ResolutionDate_string" # Formatted display dates
+    DEFINITION = "Definition"                      # Lookup table standard
+    SERVICE = "Service"                           # Core business entity
+    CATEGORY = "Category"                         # Service grouping
+    COMPONENT_NAME = "ComponentName"              # Jira component field
+    KPI_VALUE = "KPI Value"                       # Calculated metrics
+    KPI_TYPE = "KPI Type"                         # Metric categorization
+
 @dataclass(frozen=True)
 class JiraFields:
     """Jira-specific field mappings"""
+    # Main field containers
+    FIELDS = "fields"
+    
+    # Core Jira fields
+    KEY = "key"
+    RESOLUTION_DATE = "resolutiondate"
+    ISSUE_LINKS = "issuelinks"
+    ISSUE_TYPE = "issuetype"
+    CREATED = "created"
+    FIX_VERSIONS = "fixVersions"
+    TIME_SPENT = "timespent"
+    
+    # Custom fields
+    REQUEST_TYPE_CUSTOM_FIELD = "customfield_23641"
+    CCF_DATE_CUSTOM_FIELD = "customfield_13454"
+    PROJECT_INITIATIVE_CUSTOM_FIELD = "customfield_28846"
+    
+    # Subfield names
+    REQUEST_TYPE_SUBFIELD = "requestType"
+    NAME_SUBFIELD = "name"
+    VALUE_SUBFIELD = "value"
+    CHILD_SUBFIELD = "child"
+    DESCRIPTION_SUBFIELD = "description"
+
+@dataclass(frozen=True)
+class DataFrameColumns:
+    """DataFrame column names used across the system"""
+    NAME = "Name"
+    DESCRIPTION = "Description"
+
+class DefaultValues:
+    """Default values used throughout the system"""
+    UNKNOWN = "Unknown"
+    EMPTY_STRING = ""
+    PROJECT_SEPARATOR = "-"
 
 @dataclass(frozen=True)
 class ProcessingConfig:
@@ -72,6 +141,10 @@ class ProcessingConfig:
     
     # Analysis settings
     HISTORICAL_MONTHS = 7
+
+    # Array indices (new additions for jira_parser)
+    FIRST_ELEMENT_INDEX = 0
+    PROJECT_KEY_INDEX = 0
 
 
 @dataclass(frozen=True)
@@ -172,3 +245,10 @@ class PowerBIConfig:
         "PreferredIssueType",
         "ResolutionDate_yyyy_mm"
     ]
+
+    DECIMAL_PLACES_ROUNDING: Final[int] = 2       # Consistent decimal formatting
+    DATE_ORDER_START: Final[int] = 1              # PowerBI 1-based indexing
+    PERCENTAGE_MULTIPLIER: Final[int] = 100       # Decimal to percentage conversion
+    SLO_CATEGORY_COLUMNS: Final[List[str]]        # Reusable column sets
+    SLO_SERVICE_COLUMNS: Final[List[str]]         # View-specific column filters
+    POSITIVE_NON_THROUGHPUT = "Positive"          # Non-throughput impact values
