@@ -1,23 +1,7 @@
 import pandas as pd
 from output_formatter import convert_data_for_power_bi
-from config import FieldNames
+from config import FieldNames, PowerBIConfig
 from collections import OrderedDict
-
-# Constants for hardcoded values
-CHANGE_IMPACT_TRUE = "True"
-CHANGE_IMPACT_FALSE = "False"
-CHANGE_IMPACT_POSITIVE = "Positive"
-CHANGE_DIRECTION_UP = "↑"
-CHANGE_DIRECTION_DOWN = "↓"
-MATRIX_STAT_TARGET = "Target (red line)"
-MATRIX_STAT_CHANGE = "Change (Month on Month)"
-MATRIX_STAT_AVERAGE = "6-Month Average"
-LINE_ORDER_TARGET = 1
-LINE_ORDER_CHANGE = 2
-LINE_ORDER_AVERAGE = 3
-DECIMAL_PLACES_ROUNDING = 2
-DEFINITION_COLUMN = "Definition"
-THROUGHPUT_KPI_TYPE = "Throughput"
 
 def create_kpi_result_views(standard_throughput_results, time_status_per_month):
     
@@ -40,11 +24,11 @@ def enhance_recent_results(recent_results_kpi, category_definitions_df, kpi_defi
     
     # Left join definitions to the recent results on 'Service' and Rename the 'Definition' column to CATEGORY_DEFINITION in recent_results_kpi
     recent_results_kpi = pd.merge(recent_results_kpi, category_definitions_df, on="Service", how="left")
-    recent_results_kpi = recent_results_kpi.rename(columns={DEFINITION_COLUMN: FieldNames.CATEGORY_DEFINITION})
+    recent_results_kpi = recent_results_kpi.rename(columns={PowerBIConfig.DEFINITION_COLUMN: FieldNames.CATEGORY_DEFINITION})
     
     # Left join kpi definitions on recent results on 'KPI Type' and Rename the 'Definition' column to KPI_DEFINITION in recent_results_kpi
     recent_results_kpi = pd.merge(recent_results_kpi, kpi_definitions_df, on="KPI Type", how="left")
-    recent_results_kpi = recent_results_kpi.rename(columns={DEFINITION_COLUMN: FieldNames.KPI_DEFINITION})
+    recent_results_kpi = recent_results_kpi.rename(columns={PowerBIConfig.DEFINITION_COLUMN: FieldNames.KPI_DEFINITION})
     
     return recent_results_kpi
 
@@ -112,16 +96,16 @@ def create_slo_service_view(all_results_kpi):
     return slo_met_percent_service
 
 def calculate_change_impact(row):
-    if row["KPI"] == THROUGHPUT_KPI_TYPE:
-        return CHANGE_IMPACT_TRUE if row["Change in KPI Value"] and row["Change in KPI Value"] > 0 else CHANGE_IMPACT_FALSE
+    if row["KPI"] == PowerBIConfig.THROUGHPUT_KPI_TYPE:
+        return PowerBIConfig.CHANGE_IMPACT_TRUE if row["Change in KPI Value"] and row["Change in KPI Value"] > 0 else PowerBIConfig.CHANGE_IMPACT_FALSE
     else:
-        return CHANGE_IMPACT_FALSE if row["Change in KPI Value"] and row["Change in KPI Value"] > 0 else CHANGE_IMPACT_POSITIVE
+        return PowerBIConfig.CHANGE_IMPACT_FALSE if row["Change in KPI Value"] and row["Change in KPI Value"] > 0 else PowerBIConfig.CHANGE_IMPACT_POSITIVE
 
 def _enhance_kpi_insights(kpi_insights, kpi_targets_df):
     kpi_insights = pd.merge(kpi_insights, kpi_targets_df, on=FieldNames.SERVICE_KPI, how="left")
     kpi_insights["change_impact"] = kpi_insights.apply(calculate_change_impact, axis=1)
     kpi_insights["change_direction"] = kpi_insights["Change in KPI Value"].apply(
-        lambda x: CHANGE_DIRECTION_UP if pd.notna(x) and x > 0 else CHANGE_DIRECTION_DOWN
+        lambda x: PowerBIConfig.CHANGE_DIRECTION_UP if pd.notna(x) and x > 0 else PowerBIConfig.CHANGE_DIRECTION_DOWN
     )
     return kpi_insights
 
@@ -130,24 +114,24 @@ def _create_matrix_rows(kpi_insights):
     for _, row in kpi_insights.iterrows():
         rows.append({
             FieldNames.SERVICE_KPI: row[FieldNames.SERVICE_KPI],
-            "Stat": MATRIX_STAT_TARGET,
+            "Stat": PowerBIConfig.MATRIX_STAT_TARGET,
             "Arrow": "",
             "Value": row[FieldNames.TARGET],
-            "line_order": LINE_ORDER_TARGET,
+            "line_order": PowerBIConfig.LINE_ORDER_TARGET,
         })
         rows.append({
             FieldNames.SERVICE_KPI: row[FieldNames.SERVICE_KPI],
-            "Stat": MATRIX_STAT_CHANGE,
+            "Stat": PowerBIConfig.MATRIX_STAT_CHANGE,
             "Arrow": row["change_direction"],
             "Value": row["Change in KPI Value"],
-            "line_order": LINE_ORDER_CHANGE,
+            "line_order": PowerBIConfig.LINE_ORDER_CHANGE,
         })
         rows.append({
             FieldNames.SERVICE_KPI: row[FieldNames.SERVICE_KPI],
-            "Stat": MATRIX_STAT_AVERAGE,
+            "Stat": PowerBIConfig.MATRIX_STAT_AVERAGE,
             "Arrow": "",
-            "Value": round(row["Average KPI Value"], DECIMAL_PLACES_ROUNDING),  # Rounded to 2 decimal places
-            "line_order": LINE_ORDER_AVERAGE,
+            "Value": round(row["Average KPI Value"], PowerBIConfig.DECIMAL_PLACES_ROUNDING),  # Rounded to 2 decimal places
+            "line_order": PowerBIConfig.LINE_ORDER_AVERAGE,
         })
     return rows
 

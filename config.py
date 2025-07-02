@@ -124,6 +124,26 @@ class DefaultValues:
     UNKNOWN = "Unknown"
     EMPTY_STRING = ""
     PROJECT_SEPARATOR = "-"
+    EMPTY_LIST = []
+    EMPTY_DICT = {}
+    FALSE_RETURN = False
+
+@dataclass(frozen=True)
+class KPIConfig:
+    """KPI calculation specific constants"""
+    
+    # Unit types
+    UNIT_HOURS = 'hours'
+    UNIT_TICKETS = 'tickets'
+    
+    # KPI types
+    KPI_TYPE_THROUGHPUT = 'Throughput'
+    KPI_TYPE_LEAD = 'Lead'
+    KPI_TYPE_RESOLUTION = 'Resolution'
+    
+    # Separators and derived values
+    KPI_SEPARATOR = '-'
+    LEAD_SUB_STATUS = 'Lead_sub_status'
 
 @dataclass(frozen=True)
 class ProcessingConfig:
@@ -173,6 +193,11 @@ class ProcessingConfig:
     # Array indexing constants
     LAST_ELEMENT_INDEX = -1                      # Used 3+ times for indexing
     YEAR_SUFFIX_INDEX = -2                       # Used 2+ times for slicing
+
+    # DataFrame processing constants
+    PROJECT_ISSUE_TYPE_COLUMN = "project-issuetype"
+    COMPONENT_NAME_COLUMN = "ComponentName"
+    PANDAS_COLUMN_AXIS = 1
 
 
 @dataclass(frozen=True)
@@ -385,3 +410,17 @@ class PowerBIConfig:
     SLO_CATEGORY_COLUMNS: Final[List[str]]        # Reusable column sets
     SLO_SERVICE_COLUMNS: Final[List[str]]         # View-specific column filters
     POSITIVE_NON_THROUGHPUT = "Positive"          # Non-throughput impact values
+
+    CHANGE_IMPACT_TRUE = "True"
+    CHANGE_IMPACT_FALSE = "False"
+    CHANGE_IMPACT_POSITIVE = "Positive"
+    CHANGE_DIRECTION_UP = "↑"
+    CHANGE_DIRECTION_DOWN = "↓"
+    MATRIX_STAT_TARGET = "Target (red line)"
+    MATRIX_STAT_CHANGE = "Change (Month on Month)"
+    MATRIX_STAT_AVERAGE = "6-Month Average"
+    LINE_ORDER_TARGET = 1
+    LINE_ORDER_CHANGE = 2
+    LINE_ORDER_AVERAGE = 3
+    DEFINITION_COLUMN = "Definition"
+    THROUGHPUT_KPI_TYPE = "Throughput"

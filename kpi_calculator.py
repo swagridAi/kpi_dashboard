@@ -3,21 +3,12 @@ from typing import Any, Dict, List
 
 # Third-party imports
 import pandas as pd
-from config import FieldNames, ProcessingConfig, BusinessRules, PowerBIConfig
-
-# Constants
-UNIT_HOURS = 'hours'
-UNIT_TICKETS = 'tickets'
-KPI_TYPE_THROUGHPUT = 'Throughput'
-KPI_TYPE_LEAD = 'Lead'
-KPI_TYPE_RESOLUTION = 'Resolution'
-KPI_SEPARATOR = '_'
-LEAD_SUB_STATUS = 'Lead_sub_status'
+from config import FieldNames, ProcessingConfig, BusinessRules, PowerBIConfig, KPIConfig
 
 def _calculate_preferred_throughput(row):
-    if row['Unit'] == UNIT_HOURS:
+    if row['Unit'] == KPIConfig.UNIT_HOURS:
         return row['TotalHours']
-    elif row['Unit'] == UNIT_TICKETS:
+    elif row['Unit'] == KPIConfig.UNIT_TICKETS:
         return row['TotalUniqueTicketsClosed']
     else:
         return None  # Handle cases where Unit is missing or invalid
@@ -54,9 +45,9 @@ def _add_throughput_columns(result):
     result[FieldNames.KPI_MET] = result.apply(lambda row: row['KPI Value'] <= row[FieldNames.TARGET] if pd.notna(row[FieldNames.TARGET]) else False, axis=1)
     
     # Step 11: Add a new column called SERVICE_KPI which is a combination of 'Service' and TIME_TYPE_COLUMN
-    result[FieldNames.SERVICE_KPI] = result['Service'] + KPI_SEPARATOR + KPI_TYPE_THROUGHPUT
+    result[FieldNames.SERVICE_KPI] = result['Service'] + KPIConfig.KPI_SEPARATOR + KPIConfig.KPI_TYPE_THROUGHPUT
     
-    result['KPI Type'] = KPI_TYPE_THROUGHPUT
+    result['KPI Type'] = KPIConfig.KPI_TYPE_THROUGHPUT
     
     return result
 
@@ -76,7 +67,7 @@ def standard_throughput_calculation(ticket_data_df, kpi_targets_df):
 
 def _prepare_time_status_data(ticket_data_df):
     # Step 0: Rename TIME_TYPE_COLUMN value "Lead" to "Lead_sub_status"
-    ticket_data_df[FieldNames.TIME_TYPE_COLUMN] = ticket_data_df[FieldNames.TIME_TYPE_COLUMN].replace(KPI_TYPE_LEAD, LEAD_SUB_STATUS)
+    ticket_data_df[FieldNames.TIME_TYPE_COLUMN] = ticket_data_df[FieldNames.TIME_TYPE_COLUMN].replace(KPIConfig.KPI_TYPE_LEAD, KPIConfig.LEAD_SUB_STATUS)
     
     # Step 1: Calculate unique keys at the level of Service and ResolutionDate_yyyy_mm
     unique_keys_per_service = (
@@ -111,7 +102,7 @@ def _calculate_inclusive_durations(grouped):
     grouped = grouped.drop(columns=['UniqueKeys', FieldNames.TOTAL_STATUS_DURATION_COLUMN])
     
     # Step 6: Add the inclusive duration as new rows with TIME_TYPE_COLUMN set to 'Lead'
-    inclusive_durations[FieldNames.TIME_TYPE_COLUMN] = KPI_TYPE_LEAD
+    inclusive_durations[FieldNames.TIME_TYPE_COLUMN] = KPIConfig.KPI_TYPE_LEAD
     inclusive_durations.rename(columns={FieldNames.INCLUSIVE_DURATION_COLUMN: 'AverageStatusDuration'}, inplace=True)
     
     # Step 7: Append the inclusive durations to the grouped DataFrame
@@ -140,7 +131,7 @@ def _process_ticket_resolution_times(ticket_data_df, result):
     ticket_resolution_times = ticket_resolution_times.rename(columns={'AverageDuration': 'AverageStatusDuration'})
     
     # Add a new column called Time Type which is filled with the value 'Resolution'
-    ticket_resolution_times[FieldNames.TIME_TYPE_COLUMN] = KPI_TYPE_RESOLUTION
+    ticket_resolution_times[FieldNames.TIME_TYPE_COLUMN] = KPIConfig.KPI_TYPE_RESOLUTION
     
     # Reorder the columns to have the order:
     ticket_resolution_times = ticket_resolution_times[
@@ -179,7 +170,7 @@ def _merge_kpi_targets_and_finalize(result, ticket_resolution_times, kpi_targets
     result[FieldNames.KPI_MET] = result.apply(lambda row: row['KPI Value'] <= row[FieldNames.TARGET] if pd.notna(row[FieldNames.TARGET]) else False, axis=1)
     
     # Step 5: Add a new column called SERVICE_KPI which is a combination of 'Service' and TIME_TYPE_COLUMN
-    result[FieldNames.SERVICE_KPI] = result['Service'] + KPI_SEPARATOR + result[FieldNames.TIME_TYPE_COLUMN]
+    result[FieldNames.SERVICE_KPI] = result['Service'] + KPIConfig.KPI_SEPARATOR + result[FieldNames.TIME_TYPE_COLUMN]
     
     # Step 6: Add a new column called 'KPI Type' which is the same as TIME_TYPE_COLUMN
     result['KPI Type'] = result[FieldNames.TIME_TYPE_COLUMN]
