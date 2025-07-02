@@ -104,18 +104,14 @@ def _prepare_data_for_analysis(matched_entries, mapping_table, requestor_df):
     
     return matched_entries
 
-def _calculate_kpi_results(matched_entries, kpi_targets_df):
+def _calculate_kpi_results(matched_entries, kpi_targets_df, services_categories):
     """Calculate all KPI results."""
-    kpi_targets_df[FieldNames.SERVICE_KPI] = kpi_targets_df['Service'] + ' - ' + kpi_targets_df['KPI']
-    
-    services_categories = matched_entries[['Service', 'Category']].drop_duplicates()
-    
     standard_throughput_results = standard_throughput_calculation(matched_entries, kpi_targets_df)
     time_status_per_month = get_time_status_per_month(matched_entries, kpi_targets_df)
     issue_rate = get_issue_rate(matched_entries)
     all_results_kpi, recent_results_kpi, kpi_insights = create_kpi_result_views(standard_throughput_results, time_status_per_month)
     
-    return standard_throughput_results, time_status_per_month, issue_rate, all_results_kpi, recent_results_kpi, kpi_insights, services_categories
+    return standard_throughput_results, time_status_per_month, issue_rate, all_results_kpi, recent_results_kpi, kpi_insights
 
 def _create_power_bi_views(all_results_kpi, recent_results_kpi, kpi_insights, services_categories, category_definitions_df, kpi_definitions_df, kpi_targets_df, matched_entries):
     """Create Power BI formatted views."""
@@ -171,7 +167,11 @@ def filter_json_with_status_durations(json_data, mapping_table, kpi_targets_df, 
     
     matched_entries = _prepare_data_for_analysis(matched_entries, mapping_table, requestor_df)
     
-    standard_throughput_results, time_status_per_month, issue_rate, all_results_kpi, recent_results_kpi, kpi_insights, services_categories = _calculate_kpi_results(matched_entries, kpi_targets_df)
+    kpi_targets_df[FieldNames.SERVICE_KPI] = kpi_targets_df['Service'] + ' - ' + kpi_targets_df['KPI']
+    
+    services_categories = matched_entries[['Service', 'Category']].drop_duplicates()
+    
+    standard_throughput_results, time_status_per_month, issue_rate, all_results_kpi, recent_results_kpi, kpi_insights = _calculate_kpi_results(matched_entries, kpi_targets_df, services_categories)
     
     all_results_kpi, recent_results_kpi, kpi_insights, matrix_view, slo_met_percent_category, slo_met_percent_service, requestor_data_clean, requestor_data_clean_grouped = _create_power_bi_views(all_results_kpi, recent_results_kpi, kpi_insights, services_categories, category_definitions_df, kpi_definitions_df, kpi_targets_df, matched_entries)
     
