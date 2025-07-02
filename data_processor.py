@@ -5,10 +5,27 @@ import calendar
 from config import FieldNames, ProcessingConfig
 import pandas as pd
 
+# Constants for hardcoded values
+COLUMNS_TO_DROP = [FieldNames.ISSUE_TYPE, FieldNames.REQUEST_TYPE]
+CLOSE_DATE_PROJECT_TYPES = ["DOMMBAU-Data Quality Rule", "DOMMBAU-Consumer Validation"]
+CLOSE_DATE_HOUR = 14
+CLOSE_DATE_MINUTE = 54
+CLOSE_DATE_SECOND = 44
+YEAR_PREFIX = "20"
+CLOSE_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.000+1000"
+SECONDS_TO_HOURS = 3600
+MINIMUM_DURATION = 0
+MONTH_MAPPING = {
+    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
+    "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
+    "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
+}
+FIELD_NAMES_FROM_KEY = 'FieldNames.FROM'
+
 
 def merge_mapping_tables(matched_entries, mapping_table):
     # Drop the unnecessary columns from the mapping_table
-    columns_to_drop = [FieldNames.ISSUE_TYPE, FieldNames.REQUEST_TYPE]  # Columns to drop
+    columns_to_drop = COLUMNS_TO_DROP  # Columns to drop
     mapping_table = mapping_table.drop(columns=columns_to_drop, errors='ignore')
     matched_entries = matched_entries.drop(columns=columns_to_drop, errors='ignore')
     
@@ -48,39 +65,42 @@ def add_preferred_issue_type(df, request_type_col, issue_type_col, preferred_iss
     )
     return df
 
+def _should_use_fix_version_for_close_date(project_issuetype):
+    """Check if project-issuetype should use FixVersion for close date calculation."""
+    return project_issuetype in CLOSE_DATE_PROJECT_TYPES
+
+def _calculate_close_date_from_fix_version(fix_version):
+    """Calculate close date from FixVersion string."""
+    try:
+        # Extract year and month abbreviation from FixVersion
+        parts = fix_version.split(" ")
+        month_day = parts[-1]  # Extract the MonthDay part
+        month_abbr = month_day[:-2]  # Extract the month abbreviation (e.g., Feb)
+        year = int(YEAR_PREFIX + month_day[-2:])  # Extract the year (e.g., 25 -> 2025)
+        
+        # Map month abbreviations to numbers
+        month_number = MONTH_MAPPING.get(month_abbr)
+        
+        # Get the last day of the month
+        last_day = calendar.monthrange(year, month_number)[1]
+        last_date = datetime(year, month_number, last_day, CLOSE_DATE_HOUR, CLOSE_DATE_MINUTE, CLOSE_DATE_SECOND)
+        
+        # Format the date as required
+        formatted_date = last_date.strftime(CLOSE_DATE_FORMAT)
+        return formatted_date
+    except Exception as e:
+        print(f"Error processing FixVersion: {e}")
+        return None
+
 def update_ticket_values(ticket_values: dict) -> dict:
     """
     Updates the ticket_values dictionary by adding a new key 'close_date'
     based on the value of 'project-issuetype'.
     """
-    if ticket_values.get("project-issuetype") in ["DOMMBAU-Data Quality Rule", "DOMMBAU-Consumer Validation"]:
+    if _should_use_fix_version_for_close_date(ticket_values.get("project-issuetype")):
         fix_version = ticket_values.get("FixVersion")
         if fix_version:
-            try:
-                # Extract year and month abbreviation from FixVersion
-                parts = fix_version.split(" ")
-                month_day = parts[-1]  # Extract the MonthDay part
-                month_abbr = month_day[:-2]  # Extract the month abbreviation (e.g., Feb)
-                year = int("20" + month_day[-2:])  # Extract the year (e.g., 25 -> 2025)
-                
-                # Map month abbreviations to numbers
-                month_mapping = {
-                    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
-                    "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
-                    "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
-                }
-                month_number = month_mapping.get(month_abbr)
-                
-                # Get the last day of the month
-                last_day = calendar.monthrange(year, month_number)[1]
-                last_date = datetime(year, month_number, last_day, 14, 54, 44)
-                
-                # Format the date as required
-                formatted_date = last_date.strftime("%Y-%m-%dT%H:%M:%S.000+1000")
-                ticket_values["close_date"] = formatted_date
-            except Exception as e:
-                ticket_values["close_date"] = None  # Handle errors gracefully
-                print(f"Error processing FixVersion: {e}")
+            ticket_values["close_date"] = _calculate_close_date_from_fix_version(fix_version)
         else:
             ticket_values["close_date"] = None  # Default if FixVersion is missing
     else:
@@ -105,14 +125,32 @@ def calculate_duration(start_date: str, end_date: str) -> Any:
         start_dt = parse(start_date, ignoretz=True)
         end_dt = parse(end_date, ignoretz=True)
         
-        total_hours = (end_dt - start_dt).total_seconds() / 3600
-        if total_hours < 0:
-            total_hours = 0
+        total_hours = (end_dt - start_dt).total_seconds() / SECONDS_TO_HOURS
+        if total_hours < MINIMUM_DURATION:
+            total_hours = MINIMUM_DURATION
         print(f"total_hours is type {type(total_hours)} and value {total_hours}")
         return total_hours
     except (ValueError, TypeError):
         print(f"Error parsing dates: {start_date} or {end_date}")
         return 'Invalid Date'
+
+def _calculate_status_duration_for_entry(i, change_created, previous_change_created, ticket_values):
+    """Calculate status duration for a changelog entry."""
+    if i == 0 and change_created:
+        return calculate_duration(ticket_values["Created"], change_created)
+    elif previous_change_created and change_created:
+        return calculate_duration(previous_change_created, change_created)
+    return None
+
+def _create_changelog_data(changelog_entry, status_duration):
+    """Create changelog data dictionary from entry and calculated duration."""
+    return {
+        'ChangeCreated': changelog_entry.get('ChangeCreated', None),
+        'StatusDuration': status_duration,
+        'Author': changelog_entry.get('Author', 'Unknown'),
+        'Field': changelog_entry.get('Field', 'Unknown'),
+        FIELD_NAMES_FROM_KEY: changelog_entry.get(FIELD_NAMES_FROM_KEY, 'Unknown'),
+    }
 
 def process_changelog_entries(
     changelog_entries: List[Dict[str, Any]], matched_entries: List[Dict[str, Any]], ticket_values: Dict[str, Any]
@@ -123,20 +161,9 @@ def process_changelog_entries(
     previous_change_created = None
     for i, changelog_entry in enumerate(changelog_entries):
         change_created = changelog_entry.get('ChangeCreated', None)
-        status_duration = None
+        status_duration = _calculate_status_duration_for_entry(i, change_created, previous_change_created, ticket_values)
         
-        if i == 0 and change_created:
-            status_duration = calculate_duration(ticket_values["Created"], change_created)
-        elif previous_change_created and change_created:
-            status_duration = calculate_duration(previous_change_created, change_created)
-        
-        changelog_data = {
-            'ChangeCreated': change_created,
-            'StatusDuration': status_duration,
-            'Author': changelog_entry.get('Author', 'Unknown'),
-            'Field': changelog_entry.get('Field', 'Unknown'),
-            'FieldNames.FROM': changelog_entry.get('FieldNames.FROM', 'Unknown'),
-        }
+        changelog_data = _create_changelog_data(changelog_entry, status_duration)
         ticket_values.update(changelog_data)
         matched_entries.append(ticket_values.copy())
         
