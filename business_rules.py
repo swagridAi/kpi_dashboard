@@ -1,9 +1,11 @@
-# Third-party imports
-from config import ProcessingConfig
+# Constants
+PROJECT_ISSUE_TYPE_COLUMN = "project-issuetype"
+COMPONENT_NAME_COLUMN = "ComponentName"
+PANDAS_COLUMN_AXIS = 1
 
 def _is_row_allowed(row, project_issues_to_check):
-    project_issuetype = row[ProcessingConfig.PROJECT_ISSUE_TYPE_COLUMN]
-    component_name = row[ProcessingConfig.COMPONENT_NAME_COLUMN]
+    project_issuetype = row[PROJECT_ISSUE_TYPE_COLUMN]
+    component_name = row[COMPONENT_NAME_COLUMN]
     
     # If the project-issuetype is not in project_issues_to_check, keep the row
     if project_issuetype not in project_issues_to_check:
@@ -15,6 +17,7 @@ def _is_row_allowed(row, project_issues_to_check):
     
     # Otherwise, exclude the row
     return False
+
 
 def filter_matched_entries(matched_entries, project_issues_to_check):
     """
@@ -28,7 +31,7 @@ def filter_matched_entries(matched_entries, project_issues_to_check):
         pd.DataFrame: The filtered DataFrame.
     """
     # Generate the boolean mask
-    mask = matched_entries.apply(lambda row: _is_row_allowed(row, project_issues_to_check), axis=ProcessingConfig.PANDAS_COLUMN_AXIS)
+    mask = matched_entries.apply(lambda row: _is_row_allowed(row, project_issues_to_check), axis=PANDAS_COLUMN_AXIS)
     
     # Apply the filtering logic
     filtered_entries = matched_entries.loc[mask]

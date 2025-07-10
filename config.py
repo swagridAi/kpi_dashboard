@@ -6,9 +6,9 @@ And calculation system
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Final
+from typing import Dict, List
 
-# ========
+
 # FIELD NAMES - Organised into logical groups
 # ========
 
@@ -17,33 +17,33 @@ class FieldNames:
     """Core field names used across the system"""
     ISSUE_TYPE = "IssueType"
     REQUEST_TYPE = "RequestType"
-    PREFERRED_ISSUE_TYPE = "PreferredIssueType"
+    PREFERRED_ISSUE_TYPE = "PreferredIssueType"    # User defined
     PROJECT = "Project"
     STATUS = "Status"
     FROM = "From"
-    
+
     # KPI and service fields
-    SERVICE_KPI = "Service KPI"
-    DATES = "dates"
-    KPI_MET = "KPI Met"
-    TARGET = "Target"
-    
+    SERVICE_KPI = "Service KPI"                     # User defined
+    DATES = "dates"                                 # User defined
+    KPI_MET = "KPI Met"                            # User defined
+    TARGET = "Target"                              # User defined
+
     # Definition fields
-    CATEGORY_DEFINITION = "Category Definition"
-    KPI_DEFINITION = "KPI Definition"
-    
+    CATEGORY_DEFINITION = "Category Definition"     # User defined
+    KPI_DEFINITION = "KPI Definition"              # User defined
+
     # Date and time columns
-    RESOLUTION_DATE_YYYY_MM = "ResolutionDate_yyyy_mm"
-    TOTAL_STATUS_DURATION_COLUMN = "TotalStatusDuration"
-    TIME_TYPE_COLUMN = "Time Type"
+    RESOLUTION_DATE_YYYY_MM = "ResolutionDate_yyyy_mm"      # User defined
+    TOTAL_STATUS_DURATION_COLUMN = "TotalStatusDuration"    # User defined
+    TIME_TYPE_COLUMN = "Time Type"                          # User defined
     INCLUSIVE_DURATION_COLUMN = "InclusiveDuration"
-    
+
     # Project initiative columns
-    PROJECT_INITIATIVE_L1_COLUMN = "project_initiative_l1"
-    PROJECT_INITIATIVE_L2_COLUMN = "project_initiative_l2"
-    
+    PROJECT_INITIATIVE_L1_COLUMN = "project_initiative_l1"  # User defined
+    PROJECT_INITIATIVE_L2_COLUMN = "project_initiative_l2"  # User defined
+
     # File-specific columns
-    SERVICE_USER_COLUMN = "Service user"
+    SERVICE_USER_COLUMN = "Service user"            # User defined
 
     # Ticket data fields (new additions for jira_parser)
     KEY = "Key"
@@ -54,44 +54,58 @@ class FieldNames:
     CCF_DATE = "CCFDate"
     TICKET_DURATION = "TicketDuration"
     FIX_VERSION = "FixVersion"
-    TIME_SPENT_SECONDS = "TimespentSeconds"
+    TIME_SPENT_SECONDS = "TimeSpentSeconds"
     COMPONENT_NAME = "ComponentName"
     COMPONENT_DESCRIPTION = "ComponentDescription"
     PARENT_VALUE = "parent_value"
     CHILD_VALUE = "child_value"
 
-    # PowerBi fields
-    AVERAGE_KPI_VALUE = "Average KPI Value"        # Eliminated string literal duplication
-    CHANGE_IN_KPI_VALUE = "Change in KPI Value"    # PowerBI column consistency  
-    KPI_MET_PERCENTAGE = "KPI_Met_Percentage"      # SLO calculation standardization
-    CHANGE_IMPACT = "change_impact"                # Impact assessment columns
-    CHANGE_DIRECTION = "change_direction"          # Arrow indicator columns
-    STAT = "Stat"                                  # Matrix view structure
-    ARROW = "Arrow"                               # Visual indicator columns
-    VALUE = "Value"                               # Generic value columns
-    LINE_ORDER = "line_order"                     # Matrix ordering
-    DATE_ORDER = "DateOrder"                      # PowerBI date sorting
-    RESOLUTION_DATE_STRING = "ResolutionDate_string" # Formatted display dates
-    DEFINITION = "Definition"                      # Lookup table standard
-    SERVICE = "Service"                           # Core business entity
-    CATEGORY = "Category"                         # Service grouping
-    COMPONENT_NAME = "ComponentName"              # Jira component field
-    KPI_VALUE = "KPI Value"                       # Calculated metrics
-    KPI_TYPE = "KPI Type"                         # Metric categorization
+    # PowerBI fields
+    AVERAGE_KPI_VALUE = "Average KPI Value"         # Eliminated string literal duplication
+    CHANGE_IN_KPI_VALUE = "Change in KPI Value"     # PowerBI column consistency
+    KPI_MET_PERCENTAGE = "KPI_Met_Percentage"       # SLO calculation standardization
+    CHANGE_IMPACT = "change_impact"                 # Impact assessment columns
+    CHANGE_DIRECTION = "change_direction"           # Arrow indicator columns
+    STAT = "Stat"                                   # Matrix view structure
+    ARROW = "Arrow"                                 # Visual indicator columns
+    VALUE = "Value"                                 # Generic value columns
+    LINE_ORDER = "line_order"                       # Matrix ordering
+    DATE_ORDER = "DateOrder"                        # PowerBI date sorting
+    RESOLUTION_DATE_STRING = "ResolutionDate_string"  # Formatted display dates
+    DEFINITION = "Definition"                       # Lookup table standard
+    SERVICE = "Service"                             # Core business entity
+    CATEGORY = "Category"                           # Service grouping
+    COMPONENT_NAME = "ComponentName"                # Jira component field
+    KPI_VALUE = "KPI Value"                         # Calculated metrics
+    KPI_TYPE = "KPI Type"                          # Metric categorization
 
     # Data processor
-    CLOSE_DATE = "close_date"                    # Used 5+ times, calculated field
-    CHANGE_CREATED = "ChangeCreated"             # Used 6+ times, changelog field
-    STATUS_DURATION = "StatusDuration"           # Used 5+ times, calculated metric
-    AUTHOR = "Author"                            # Used 3+ times, changelog field
-    FIELD = "Field"                              # Used 3+ times, changelog field
+    CLOSE_DATE = "close_date"                      # Used 5+ times, calculated field
+    CHANGE_CREATED = "changeCreated"               # Used 6+ times, changelog field
+    STATUS_DURATION = "StatusDuration"             # Used 5+ times, calculated metric
+    AUTHOR = "Author"                              # Used 3+ times, changelog field
+    FIELD = "Field"                                # Used 3+ times, changelog field
+    TO = "To"
+
+
+@dataclass(frozen=True)
+class ChangelogFields:
+    FIELD = "field"
+    HISTORIES = "histories"
+    CHANGE_LOG = "changelog"
+    TO_STRING = "toString"
+    FROM_STRING = "fromString"
+    ITEMS = "items"
+    AUTHOR = 'author'
+    DISPLAY_NAME = 'displayName'
+
 
 @dataclass(frozen=True)
 class JiraFields:
     """Jira-specific field mappings"""
     # Main field containers
     FIELDS = "fields"
-    
+
     # Core Jira fields
     KEY = "key"
     RESOLUTION_DATE = "resolutiondate"
@@ -100,18 +114,21 @@ class JiraFields:
     CREATED = "created"
     FIX_VERSIONS = "fixVersions"
     TIME_SPENT = "timespent"
-    
+    COMPONENTS = "components"
+
     # Custom fields
     REQUEST_TYPE_CUSTOM_FIELD = "customfield_23641"
     CCF_DATE_CUSTOM_FIELD = "customfield_13454"
     PROJECT_INITIATIVE_CUSTOM_FIELD = "customfield_28846"
-    
+
     # Subfield names
     REQUEST_TYPE_SUBFIELD = "requestType"
+    REQUEST_DESCRIPTION = "RequestDescription"
     NAME_SUBFIELD = "name"
     VALUE_SUBFIELD = "value"
     CHILD_SUBFIELD = "child"
     DESCRIPTION_SUBFIELD = "description"
+
 
 @dataclass(frozen=True)
 class DataFrameColumns:
@@ -119,50 +136,297 @@ class DataFrameColumns:
     NAME = "Name"
     DESCRIPTION = "Description"
 
+
+@dataclass(frozen=True)
 class DefaultValues:
     """Default values used throughout the system"""
     UNKNOWN = "Unknown"
     EMPTY_STRING = ""
-    PROJECT_SEPARATOR = "-"
-    EMPTY_LIST = []
-    EMPTY_DICT = {}
-    FALSE_RETURN = False
+    PROJECT_SEPARATOR = " - "
+
 
 @dataclass(frozen=True)
-class KPIConfig:
-    """KPI calculation specific constants"""
-    
-    # Unit types
-    UNIT_HOURS = 'hours'
-    UNIT_TICKETS = 'tickets'
-    
-    # KPI types
-    KPI_TYPE_THROUGHPUT = 'Throughput'
-    KPI_TYPE_LEAD = 'Lead'
-    KPI_TYPE_RESOLUTION = 'Resolution'
-    
-    # Separators and derived values
-    KPI_SEPARATOR = '-'
-    LEAD_SUB_STATUS = 'Lead_sub_status'
+class ComponentsProcessing:
+    """Constants used to track the logic of Abhi tickets to make sure we're doing everything properly"""
+    # Projects which use components as fields for important information
+    PROJECT_COMPONENT_FIELDS = ["FMKDATABI"]
+
+    # Component config to determine how
+    COMPONENT_COLUMN_MAP = "Component_to_column_Mapping"
+    COMPONENT_DELIMITER = ": "
+    COMPONENT_PREFIX = "Component_"
+    COMPONENT_INFORMATION = "information"                   #Used for
+    COMPONENT_COLUMN_NAME = "component_column"
+    COMPONENT_CATEGORY = "Category"                         # Defined by Abhi. Used for the Jira Components which enables people to tag tickets individually
+    COMPONENT_ID = "ID"                                    # Defined by Abhi. Used for Jira components to tag the type of work it is
+    COMPONENT_REQUESTOR = "Requester"                      # Defined by Abhi. Used for Jira Components to tag where the work is originating from
+    COMPONENT_TYPE = "Type"                                # Defined by Abhi. Used for Jira Components to tag where the work is originating from
+    COMPONENT_ATTRIBUTES = {
+        COMPONENT_CATEGORY: {
+            COMPONENT_COLUMN_NAME: COMPONENT_PREFIX + COMPONENT_CATEGORY,
+            COMPONENT_INFORMATION: "Work or Proposal"
+        },
+        COMPONENT_ID: {
+            COMPONENT_COLUMN_NAME: COMPONENT_PREFIX + COMPONENT_ID,
+            COMPONENT_INFORMATION:"What the piece of work is"
+        },
+        COMPONENT_REQUESTOR: {
+            COMPONENT_COLUMN_NAME: COMPONENT_PREFIX + COMPONENT_REQUESTOR,
+            COMPONENT_COLUMN_MAP: FieldNames.PROJECT_INITIATIVE_L1_COLUMN,
+            COMPONENT_INFORMATION: "Where the work is coming from"
+        },
+        COMPONENT_TYPE: {
+            COMPONENT_COLUMN_NAME: COMPONENT_PREFIX + COMPONENT_TYPE,
+            COMPONENT_COLUMN_MAP: FieldNames.PREFERRED_ISSUE_TYPE,
+            COMPONENT_INFORMATION: "How the work is classified"
+        }
+    }
+
+
+@dataclass(frozen=True)
+class ValidationConfig:
+    """Data validation and data structure configuration"""
+
+    # Year validation range (reasonable business years)
+    MIN_VALID_YEAR = 2000                           # Business rule for year validation
+    MAX_VALID_YEAR = 2100                           # Business rule for year validation
+
+    # Duration validation (in hours)
+    MIN_REASONABLE_DURATION = 0                     # Data quality threshold
+    MAX_REASONABLE_DURATION = 8760000               # Data quality threshold (1 year)
+
+    # DataFrame validation
+    MIN_DATAFRAME_ROWS = 0
+    MAX_DATAFRAME_ROWS = 1000000                    # Performance limit
+
+    # Required DataFrame columns for different operations
+    REQUIRED_COLUMNS_MERGE_MAPPING = {
+        FieldNames.PROJECT,
+        FieldNames.PREFERRED_ISSUE_TYPE,
+        FieldNames.FROM
+    }
+
+    REQUIRED_COLUMNS_MERGE_REQUESTOR = {
+        FieldNames.PROJECT_INITIATIVE_L1_COLUMN,
+        FieldNames.PROJECT_INITIATIVE_L2_COLUMN
+    }
+
+    REQUIRED_COLUMNS_UNMAPPED_REPORT = {
+        FieldNames.SERVICE_USER_COLUMN,
+        FieldNames.PROJECT_INITIATIVE_L1_COLUMN,
+        FieldNames.PROJECT_INITIATIVE_L2_COLUMN
+    }
+
+    # FixVersion format validation
+    FIXVERSION_MIN_PARTS = 2                        # String validation rule
+    FIXVERSION_MONTH_LENGTH = 3                     # String validation rule
+    FIXVERSION_YEAR_SUFFIX_LENGTH = 2               # String validation rule
+
+    # File operation validation
+    MAX_FILE_SIZE_MB = 100
+    ALLOWED_FILE_EXTENSIONS = {'.csv', '.xlsx', '.json'}
+
+    # Business rule validation
+    VALID_MONTH_ABBREVIATIONS = set(ProcessingConfig.MONTH_ABBREVIATIONS.keys())
+
+    # Error tolerance settings
+    MAX_CONSECUTIVE_ERRORS = 10
+    ERROR_RATE_THRESHOLD = 0.1                      # 10% error rate threshold
+
+
+@dataclass(frozen=True)
+class BusinessRules:
+    """Business-specific filtering and processing rules"""
+
+    # Component filtering rules for specific project-issuetypes
+    PROJECT_COMPONENT_FILTERS = {
+        "DQMMBAU-Data Quality Rule": ["DQMMBAU - New DQ Rule", "DQMMBAU - Update DQ Rule"],
+        "DQMMBAU-Consumer Validation": ["DQMMBAU - New DQ Rule", "DQMMBAU - Update DQ Rule"],
+        "PMCIRIS-PFI Sub-Task": ["Testing - PFI E2E"],
+    }
+
+    # Project types that use FixVersion for close date calculation
+    FIX_VERSION_CLOSE_DATE_PROJECTS = [
+        "DQMMBAU-Data Quality Rule",
+        "DQMMBAU-Consumer Validation"
+    ]
+
+    # KPI types to include in throughput calculations
+    THROUGHPUT_KPI_TYPES = ["Throughput"]
+
+    # KPI types to include in time-based calculations
+    TIME_BASED_KPI_TYPES = ["Lead", "Cycle", "Response", "Resolution"]
+
+    # Columns to drop during data processing
+    COLUMNS_TO_DROP_AFTER_MERGE = ["IssueType", "RequestType"]
+
+    # Time type mappings for lead sub-status
+    TIME_TYPE_MAPPINGS = {
+        "Lead": "lead sub-status"
+    }
+
+
+@dataclass(frozen=True)
+class OutputConfig:
+    """Output file and data structure configuration"""
+
+    # CONSTANTS
+    MATCHED_ENTRIES = "MATCHED_ENTRIES"
+    TICKETS_CLOSED = "TICKETS_CLOSED"
+    TIME_KPIS = "TIME_KPIS"
+    ISSUE_RATE = "ISSUE_RATE"
+    ALL_KPI_RESULTS = "ALL_KPI_RESULTS"
+    RECENT_KPI_RESULTS = "RECENT_KPI_RESULTS"
+    KPI_INSIGHTS = "KPI_INSIGHTS"
+    KPI_MATRIX = "KPI_MATRIX"
+    CATEGORY_SLO = "CATEGORY_SLO"
+    SERVICE_SLO = "SERVICE_SLO"
+    REQUEST_DATA_CLEAN = "REQUEST_DATA_CLEAN"
+    REQUEST_DATA_GROUPED = "REQUEST_DATA_GROUPED"
+
+    # DataFrame names for final output collection
+    DATAFRAME_NAMES = {
+        MATCHED_ENTRIES: "Matched Entries",
+        TICKETS_CLOSED: "Tickets Closed",
+        TIME_KPIS: "Time KPIs",
+        ISSUE_RATE: "Issue Rate",
+        ALL_KPI_RESULTS: "All KPI Results",
+        RECENT_KPI_RESULTS: "Recent KPI Results",
+        KPI_INSIGHTS: "KPI Insights",
+        KPI_MATRIX: "KPI Matrix",
+        CATEGORY_SLO: "Category SLO Met Percent",
+        SERVICE_SLO: "Service SLO Met Percent",
+        REQUEST_DATA_CLEAN: "Request Data Clean",
+        REQUEST_DATA_GROUPED: "Request Data Clean Grouped"
+    }
+
+    # CSV output file names
+    OUTPUT_FILES = {
+        "UNMAPPED_REQUESTORS": "unmapped_requestors.csv",
+        MATCHED_ENTRIES: f"matched_entries.csv",
+        "DATA_BEFORE_MERGE": "data_before_merge.csv",
+        "DATA_AFTER_MERGE": "data_after_merge.csv"
+    }
+
+    # Matrix view configuration
+    MATRIX_VIEW_STATS = {
+        "TARGET": "Target (red line)",
+        "CHANGE": "Change (Month on Month)",
+        "AVERAGE": "6-Month Average"
+    }
+
+    # Matrix view line ordering
+    MATRIX_LINE_ORDER = {
+        "TARGET": 1,
+        "CHANGE": 2,
+        "AVERAGE": 3
+    }
+
+
+@dataclass(frozen=True)
+class PandasConfig:
+    """Pandas-specific configuration parameters"""
+
+    # Merge and join parameters
+    MERGE_HOW_LEFT = "left"
+    ERROR_HANDLING_IGNORE = "ignore"
+    INDEX_FALSE = False
+
+    # Axis parameters
+    AXIS_COLUMNS = 1
+
+
+@dataclass(frozen=True)
+class ErrorMessages:
+    """Standardized error messages for logging and debugging"""
+
+    # Original error messages
+    FIX_VERSION_PROCESSING_ERROR = "Error processing FixVersion"
+    DATE_PARSING_ERROR = "Error parsing dates"
+    DURATION_DEBUG_MESSAGE = "total_hours is type {type} and value {value}"
+
+    # New validation error messages
+    INVALID_DATAFRAME_STRUCTURE = "Invalid DataFrame structure"
+    MISSING_REQUIRED_COLUMNS = "Missing required columns"
+    INVALID_DATA_TYPE = "Invalid data type"
+    INVALID_YEAR_RANGE = "Year outside valid range"
+    INVALID_MONTH_ABBREVIATION = "Invalid month abbreviation"
+    INVALID_DURATION_RANGE = "Duration outside reasonable range"
+    DIVISION_BY_ZERO_ERROR = "Division by zero in calculation"
+    FILE_OPERATION_ERROR = "File operation failed"
+    EMPTY_INPUT_ERROR = "Empty or null input provided"
+    STRING_TOO_LONG_ERROR = "String exceeds maximum length"
+    CONVERSION_ERROR = "Type conversion failed"
+    BUSINESS_RULE_VIOLATION = "Business rule validation failed"
+
+    # Error context templates
+    VALIDATION_ERROR_TEMPLATE = "Validation failed for {function}: {error}"
+    PROCESSING_ERROR_TEMPLATE = "Processing error in {function}: {error}"
+    DATA_QUALITY_ERROR_TEMPLATE = "Data quality issue in {function}: {error}"
+
+
+@dataclass(frozen=True)
+class LoggingConfig:
+    """Logging configuration for error handling and monitoring"""
+
+    # Logging levels
+    ERROR_LEVEL = "ERROR"
+    WARNING_LEVEL = "WARNING"
+    INFO_LEVEL = "INFO"
+    DEBUG_LEVEL = "DEBUG"
+
+    # Log message templates
+    VALIDATION_LOG_TEMPLATE = "[{level}] {function}: {message}"
+    ERROR_COUNT_TEMPLATE = "[{level}] Error count: {count} in {function}"
+    PERFORMANCE_LOG_TEMPLATE = "[{level}] Performance: {function} took {duration}ms"
+
+
+@dataclass(frozen=True)
+class PowerBIConfig:
+    """Power BI specific formatting configuration"""
+
+    # Impact strings
+    POSITIVE = "POSITIVE"
+    NEGATIVE = "NEGATIVE"
+
+    # Change direction arrows
+    CHANGE_DIRECTION_ARROWS = {
+        POSITIVE: "↑",
+        NEGATIVE: "↓"
+    }
+
+    # Change impact values
+    CHANGE_IMPACT_VALUES = {
+        POSITIVE: "True",
+        NEGATIVE: "False"
+    }
+
+    SLO_CATEGORY_COLUMNS: List[str]                 # Reusable column sets
+    SLO_SERVICE_COLUMNS: List[str]                  # View-specific column filters
+    DECIMAL_PLACES_ROUNDING: int = 2                # Consistent decimal formatting
+    DATE_ORDER_START: int = 1                       # PowerBI 1-based indexing
+    PERCENTAGE_MULTIPLIER: int = 100                # Decimal to percentage conversion
+    POSITIVE_NON_THROUGHPUT = "positive"            # Non-throughput impact values
+
 
 @dataclass(frozen=True)
 class ProcessingConfig:
     """Processing and calculation configuration"""
-    
+
     # Unit conversion factors
     CONVERSION_FACTORS = {
         "hours": 1,
         "days": 1 / 24,
         "weeks": 1 / 168
     }
-    
+
     # Month abbreviations for date parsing
     MONTH_ABBREVIATIONS = {
         "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
         "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
         "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
     }
-    
+
     # Date format for calculate close dates
     CLOSE_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.000+1000"
     DEFAULT_CLOSE_TIME_HOUR = 14
@@ -178,249 +442,18 @@ class ProcessingConfig:
     PROJECT_KEY_INDEX = 0
 
     # Time conversion constants
-    SECONDS_TO_HOURS = 3600                      # Time conversion business rule
-    MINIMUM_DURATION = 0                         # Duration validation threshold
-    
+    SECONDS_TO_HOURS = 3600                         # Time conversion business rule
+    MINIMUM_DURATION = 0                            # Duration validation threshold
+
     # String processing constants
-    EMPTY_STRING = ""                            # Used 8+ times for validation
-    NULL_VALUE_INDICATOR = "N/A"                 # Business rule for null detection
-    SPACE_SEPARATOR = " "                        # Used 3+ times for splitting
-    
+    EMPTY_STRING = ""                               # Used 8+ times for validation
+    NULL_VALUE_INDICATOR = "N/A"                    # Business rule for null detection
+    SPACE_SEPARATOR = " "                           # Used 3+ times for splitting
+
     # Default values
-    UNKNOWN_VALUE = "Unknown"                    # Used 6+ times as fallback
-    INVALID_DATE_VALUE = "Invalid Date"          # Used 4+ times as error indicator
-    
+    UNKNOWN_VALUE = "Unknown"                       # Used 6+ times as fallback
+    INVALID_DATE_VALUE = "Invalid Date"             # Used 4+ times as error indicator
+
     # Array indexing constants
-    LAST_ELEMENT_INDEX = -1                      # Used 3+ times for indexing
-    YEAR_SUFFIX_INDEX = -2                       # Used 2+ times for slicing
-
-    # DataFrame processing constants
-    PROJECT_ISSUE_TYPE_COLUMN = "project-issuetype"
-    COMPONENT_NAME_COLUMN = "ComponentName"
-    PANDAS_COLUMN_AXIS = 1
-
-
-@dataclass(frozen=True)
-class ValidationConfig:
-
-    # Year validation range (reasonable business years)
-    MIN_VALID_YEAR = 2000                        # Business rule for year validation
-    MAX_VALID_YEAR = 2100                        # Business rule for year validation  
-    
-    # Duration validation (in hours)
-    MIN_REASONABLE_DURATION = 0                  # Data quality threshold
-    MAX_REASONABLE_DURATION = 8760               # Data quality threshold (1 year)
-    
-    # DataFrame validation
-    MIN_DATAFRAME_ROWS = 0
-    MAX_DATAFRAME_ROWS = 1000000              # Performance limit
-    
-    # Required DataFrame columns for different operations
-    REQUIRED_COLUMNS_MERGE_MAPPING = {
-        FieldNames.PROJECT, 
-        FieldNames.PREFERRED_ISSUE_TYPE, 
-        FieldNames.FROM
-    }
-    
-    REQUIRED_COLUMNS_MERGE_REQUESTOR = {
-        FieldNames.PROJECT_INITIATIVE_L1_COLUMN,
-        FieldNames.PROJECT_INITIATIVE_L2_COLUMN
-    }
-    
-    REQUIRED_COLUMNS_UNMAPPED_REPORT = {
-        FieldNames.SERVICE_USER_COLUMN,
-        FieldNames.PROJECT_INITIATIVE_L1_COLUMN,
-        FieldNames.PROJECT_INITIATIVE_L2_COLUMN
-    }
-
-    # FixVersion format validation
-    FIXVERSION_MIN_PARTS = 2                     # String validation rule
-    FIXVERSION_MONTH_LENGTH = 3                  # String validation rule
-    FIXVERSION_YEAR_SUFFIX_LENGTH = 2            # String validation rule
-
-    # File operation validation
-    MAX_FILE_SIZE_MB = 100
-    ALLOWED_FILE_EXTENSIONS = {'.csv', '.xlsx', '.json'}
-
-    # Business rule validation
-    VALID_MONTH_ABBREVIATIONS = set(ProcessingConfig.MONTH_ABBREVIATIONS.keys())
-    
-    # Error tolerance settings
-    MAX_CONSECUTIVE_ERRORS = 10
-    ERROR_RATE_THRESHOLD = 0.1  # 10% error rate threshold
-
-@dataclass(frozen=True)
-class BusinessRules:
-    """Business-specific filtering and processing rules"""
-    
-    # Component filtering rules for specific project-issuetypes
-    PROJECT_COMPONENT_FILTERS = {
-        "DQMMBAU-Data Quality Rule": ["DQMMBAU - New DQ Rule", "DQMMBAU - Update DQ Rule"],
-        "DQMMBAU-Consumer Validation": ["DQMMBAU - New DQ Rule", "DQMMBAU - Update DQ Rule"],
-        "PMCIRIS-PFI Sub-Task": ["Testing - PFI E2E"],
-    }
-    
-    # Project types that use FixVersion for close date calculation
-    FIX_VERSION_CLOSE_DATE_PROJECTS = [
-        "DQMMBAU-Data Quality Rule",
-        "DQMMBAU-Consumer Validation"
-    ]
-    
-    # KPI types to include in throughput calculations
-    THROUGHPUT_KPI_TYPES = ["Throughput"]
-    
-    # KPI types to include in time-based calculations
-    TIME_BASED_KPI_TYPES = ["Lead", "Cycle", "Response", "Resolution"]
-    
-    # Columns to drop during data processing
-    COLUMNS_TO_DROP_AFTER_MERGE = ["IssueType", "RequestType"]
-    
-    # Time type mappings for lead sub-status
-    TIME_TYPE_MAPPINGS = {
-        "Lead": "Lead sub-status"
-    }
-
-@dataclass(frozen=True)
-class OutputConfig:
-    """Output file and data structure configuration"""
-    
-    # CSV output file names
-    OUTPUT_FILES = {
-        "UNMAPPED_REQUESTORS": "unmapped_requestors.csv",
-        "MATCHED_ENTRIES": "matched_entries.csv",
-        "DATA_BEFORE_MERGE": "data_before_merge.csv",
-        "DATA_AFTER_MERGE": "data_after_merge.csv"
-    }
-    
-    # DataFrame names for final output collection
-    DATAFRAME_NAMES = {
-        "MATCHED_ENTRIES": "Matched Entries",
-        "TICKETS_CLOSED": "Tickets Closed",
-        "TIME_KPIS": "Time KPIs",
-        "ISSUE_RATE": "Issue Rate",
-        "ALL_KPI_RESULTS": "All KPI Results",
-        "RECENT_KPI_RESULTS": "Recent KPI Results",
-        "KPI_INSIGHTS": "KPI Insights",
-        "KPI_MATRIX": "KPI Matrix",
-        "CATEGORY_SLO": "Category SLO Met Percent",
-        "SERVICE_SLO": "Service SLO Met Percent",
-        "REQUEST_DATA_CLEAN": "Request Data Clean",
-        "REQUEST_DATA_GROUPED": "Request Data Clean Grouped"
-    }
-    
-    # Matrix view configuration
-    MATRIX_VIEW_STATS = {
-        "TARGET": "Target (red line)",
-        "CHANGE": "Change (Month on Month)",
-        "AVERAGE": "6-Month Average"
-    }
-    
-    # Matrix view line ordering
-    MATRIX_LINE_ORDER = {
-        "TARGET": 1,
-        "CHANGE": 2,
-        "AVERAGE": 3
-    }
-
-@dataclass(frozen=True)
-class PandasConfig:
-    """Pandas-specific configuration parameters"""
-    
-    # Merge and join parameters
-    MERGE_HOW_LEFT = "left"
-    ERROR_HANDLING_IGNORE = "ignore"
-    INDEX_FALSE = False
-    
-    # Axis parameters
-    AXIS_COLUMNS = 1
-
-@dataclass(frozen=True)
-class ErrorMessages:
-    """Standardized error messages for logging and debugging"""
-    
-    # Original error messages
-    FIX_VERSION_PROCESSING_ERROR = "Error processing FixVersion"
-    DATE_PARSING_ERROR = "Error parsing dates"
-    DURATION_DEBUG_MESSAGE = "total_hours is type {type} and value {value}"
-    
-    # New validation error messages
-    INVALID_DATAFRAME_STRUCTURE = "Invalid DataFrame structure"
-    MISSING_REQUIRED_COLUMNS = "Missing required columns"
-    INVALID_DATA_TYPE = "Invalid data type"
-    INVALID_YEAR_RANGE = "Year outside valid range"
-    INVALID_MONTH_ABBREVIATION = "Invalid month abbreviation"
-    INVALID_DURATION_RANGE = "Duration outside reasonable range"
-    DIVISION_BY_ZERO_ERROR = "Division by zero in calculation"
-    FILE_OPERATION_ERROR = "File operation failed"
-    EMPTY_INPUT_ERROR = "Empty or null input provided"
-    STRING_TOO_LONG_ERROR = "String exceeds maximum length"
-    CONVERSION_ERROR = "Type conversion failed"
-    BUSINESS_RULE_VIOLATION = "Business rule validation failed"
-    
-    # Error context templates
-    VALIDATION_ERROR_TEMPLATE = "Validation failed for {function}: {error}"
-    PROCESSING_ERROR_TEMPLATE = "Processing error in {function}: {error}"
-    DATA_QUALITY_ERROR_TEMPLATE = "Data quality issue in {function}: {error}"
-
-@dataclass(frozen=True)
-class LoggingConfig:
-    """Logging configuration for error handling and monitoring"""
-    
-    # Logging levels
-    ERROR_LEVEL = "ERROR"
-    WARNING_LEVEL = "WARNING"
-    INFO_LEVEL = "INFO"
-    DEBUG_LEVEL = "DEBUG"
-    
-    # Log message templates
-    VALIDATION_LOG_TEMPLATE = "[{level}] {function}: {message}"
-    ERROR_COUNT_TEMPLATE = "[{level}] Error count: {count} in {function}"
-    PERFORMANCE_LOG_TEMPLATE = "[{level}] Performance: {function} took {duration}ms"
-
-
-@dataclass(frozen=True)
-class PowerBIConfig:
-    """Power BI specific formatting configuration"""
-    
-    # Change direction arrows
-    CHANGE_DIRECTION_ARROWS = {
-        "UP": "↑",
-        "DOWN": "↓"
-    }
-    
-    # Change impact values
-    CHANGE_IMPACT_VALUES = {
-        "POSITIVE": "True",
-        "NEGATIVE": "False"
-    }
-    
-    # Columns of interest for requestor analysis
-    REQUESTOR_ANALYSIS_COLUMNS = [
-        "Key",
-        "Service user",
-        "Category",
-        "Service",
-        "PreferredIssueType",
-        "ResolutionDate_yyyy_mm"
-    ]
-
-    DECIMAL_PLACES_ROUNDING: Final[int] = 2       # Consistent decimal formatting
-    DATE_ORDER_START: Final[int] = 1              # PowerBI 1-based indexing
-    PERCENTAGE_MULTIPLIER: Final[int] = 100       # Decimal to percentage conversion
-    SLO_CATEGORY_COLUMNS: Final[List[str]]        # Reusable column sets
-    SLO_SERVICE_COLUMNS: Final[List[str]]         # View-specific column filters
-    POSITIVE_NON_THROUGHPUT = "Positive"          # Non-throughput impact values
-
-    CHANGE_IMPACT_TRUE = "True"
-    CHANGE_IMPACT_FALSE = "False"
-    CHANGE_IMPACT_POSITIVE = "Positive"
-    CHANGE_DIRECTION_UP = "↑"
-    CHANGE_DIRECTION_DOWN = "↓"
-    MATRIX_STAT_TARGET = "Target (red line)"
-    MATRIX_STAT_CHANGE = "Change (Month on Month)"
-    MATRIX_STAT_AVERAGE = "6-Month Average"
-    LINE_ORDER_TARGET = 1
-    LINE_ORDER_CHANGE = 2
-    LINE_ORDER_AVERAGE = 3
-    DEFINITION_COLUMN = "Definition"
-    THROUGHPUT_KPI_TYPE = "Throughput"
+    LAST_ELEMENT_INDEX = -1                         # Used 3+ times for indexing
+    YEAR_SUFFIX_INDEX = -2                          # Used 2+ times for slicing

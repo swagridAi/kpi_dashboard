@@ -5,11 +5,12 @@ from jira_get_everything_api import get_jira_data  # Example function from jira_
 import tempfile
 import logging
 import os
+from config import FieldNames
 
 # Constants for column names
-CATEGORY_COLUMN = "Category"
-PROJECT_KEY_COLUMN = "Project"
-ISSUE_TYPE_COLUMN = "IssueType"
+CATEGORY_COLUMN = FieldNames.CATEGORY
+PROJECT_KEY_COLUMN = FieldNames.PROJECT
+ISSUE_TYPE_COLUMN = FieldNames.ISSUE_TYPE
 
 # Path to the Excel file
 MAPPING_LOGIC_FILE_PATH = "mapping_files\\mapping_logic.xlsx"
@@ -43,6 +44,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
+
 def read_excel_file(file_path: str) -> pd.DataFrame:
     """Reads an Excel file into a DataFrame."""
     try:
@@ -54,11 +56,13 @@ def read_excel_file(file_path: str) -> pd.DataFrame:
         print(f"An error occurred while reading the file: {e}")
         raise
 
+
 def filter_data_by_column(data: pd.DataFrame, column: str) -> pd.DataFrame:
     """Filters rows where the specified column is not null."""
     if column not in data.columns:
         raise ValueError(f"Column '{column}' not found in the data.")
     return data[data[column].notna()]
+
 
 def get_unique_values(data: pd.DataFrame, column: str) -> List:
     """Returns a list of unique values from the specified column."""
@@ -66,24 +70,25 @@ def get_unique_values(data: pd.DataFrame, column: str) -> List:
         raise ValueError(f"Column '{column}' not found in the data.")
     return data[column].unique().tolist()
 
+
 def get_mapping_logic(mapping_file_path):
     # Read the Excel file
     data = read_excel_file(mapping_file_path)
-    
+
     # Filter rows where 'Category' is not null
     filtered_data = filter_data_by_column(data, CATEGORY_COLUMN)
-    
+
     # Get unique values from 'Project Key' and 'Issue Type'
     unique_project_keys = get_unique_values(filtered_data, PROJECT_KEY_COLUMN)
     unique_issue_types = get_unique_values(filtered_data, ISSUE_TYPE_COLUMN)
-    
+
     return filtered_data, unique_project_keys, unique_issue_types
 
 
 def save_to_excel(dataframes_dict, file_name="output.xlsx"):
     """
     Save multiple DataFrames to an Excel file with each on a separate sheet.
-    
+
     :param dataframes_dict: Dictionary where keys are sheet names and values are DataFrames.
     :param file_name: Name of the Excel file to save.
     """
@@ -125,12 +130,12 @@ def compare_and_highlight(new_dataframes, old_file, diff_file):
         logging.info("Successfully read old Excel file: %s", old_file)
         differences_found = False
         diff_dataframes = {}
-        
+
         for sheet_name, new_df in new_dataframes.items():
             logging.info("Processing sheet: %s", sheet_name)
             if sheet_name in old_data:
                 old_df = old_data[sheet_name]
-                
+
                 # Save both DataFrames as temporary Excel files
                 with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_new_file, \
                      tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_old_file:
@@ -138,44 +143,44 @@ def compare_and_highlight(new_dataframes, old_file, diff_file):
                     temp_old_file.close()  # Close the file to release the lock
                     new_df.to_excel(temp_new_file.name, index=False)
                     old_df.to_excel(temp_old_file.name, index=False)
-                    
+
                     # Read them back to standardize data types
                     standardized_new_df = pd.read_excel(temp_new_file.name)
                     standardized_old_df = pd.read_excel(temp_old_file.name)
-                    
-                    # Clean up temporary files
-                    os.unlink(temp_new_file.name)
-                    os.unlink(temp_old_file.name)
-                    
-                    # Normalize and compare
-                    normalized_new_df = standardized_new_df.reset_index(drop=True).sort_index(axis=1)
-                    normalized_old_df = standardized_old_df.reset_index(drop=True).sort_index(axis=1)
-                    
-                    # Identify rows that are unique to either DataFrame
-                    merged_df = normalized_new_df.merge(
-                        normalized_old_df,
-                        how="outer",
-                        indicator=True
-                    )
-                    diff_rows = merged_df[merged_df["_merge"] != "both"]
-                    
-                    if not diff_rows.empty:
-                        logging.info("Differences found in sheet: %s", sheet_name)
-                        differences_found = True
-                        
-                        # Add the differences to the diff_dataframes dictionary
-                        diff_dataframes[sheet_name] = diff_rows.drop(columns=["_merge"])
-                    else:
-                        logging.info("Sheet %s is new and not found in old file.", sheet_name)
-                        differences_found = True
-                        diff_dataframes[sheet_name] = new_df
-            
-            for sheet_name in old_data.keys():
-                if sheet_name not in new_dataframes:
-                    logging.info("Sheet %s is missing in new dataframes.", sheet_name)
+
+                # Clean up temporary files
+                os.unlink(temp_new_file.name)
+                os.unlink(temp_old_file.name)
+
+                # Normalize and compare
+                normalized_new_df = standardized_new_df.reset_index(drop=True).sort_index(axis=1)
+                normalized_old_df = standardized_old_df.reset_index(drop=True).sort_index(axis=1)
+
+                # Identify rows that are unique to either DataFrame
+                merged_df = normalized_new_df.merge(
+                    normalized_old_df,
+                    how="outer",
+                    indicator=True
+                )
+                diff_rows = merged_df[merged_df["_merge"] != "both"]
+
+                if not diff_rows.empty:
+                    logging.info("Differences found in sheet: %s", sheet_name)
                     differences_found = True
-                    diff_dataframes[sheet_name] = old_data[sheet_name]
-        
+
+                    # Add the differences to the diff_dataframes dictionary
+                    diff_dataframes[sheet_name] = diff_rows.drop(columns=["_merge"])
+            else:
+                logging.info("Sheet %s is new and not found in old file.", sheet_name)
+                differences_found = True
+                diff_dataframes[sheet_name] = new_df
+
+        for sheet_name in old_data.keys():
+            if sheet_name not in new_dataframes:
+                logging.info("Sheet %s is missing in new dataframes.", sheet_name)
+                differences_found = True
+                diff_dataframes[sheet_name] = old_data[sheet_name]
+
         if differences_found:
             logging.info("Differences found. Saving to file: %s", diff_file)
             with pd.ExcelWriter(diff_file) as writer:
@@ -183,15 +188,16 @@ def compare_and_highlight(new_dataframes, old_file, diff_file):
                     diff_df.to_excel(writer, sheet_name=sheet_name, index=False)
         else:
             logging.info("No differences found.")
-        
+
         return differences_found
+
     except FileNotFoundError:
         logging.warning("Old output file '%s' not found. Assuming no previous data.", old_file)
         return True  # Treat as differences found
     except Exception as e:
         logging.error("Error comparing outputs: %s", e, exc_info=True)
         return True  # Treat as differences found
-    
+
 
 def main():
     logging.info("Starting main function.")
@@ -218,7 +224,7 @@ def main():
         requestor_df = read_excel_file(REQUESTOR_MAPPING_FILE_PATH)
 
         # Find the projects and issues that we're interested in
-        file_location = get_jira_data(unique_project_keys, unique_issue_types, days=600)
+        # file_location = get_jira_data(unique_project_keys, unique_issue_types, days=180)
 
         # Find the projects and issues that we're interested in
         file_location = "task_api_response\\jira_issues_response.json"
@@ -240,9 +246,9 @@ def main():
             print("No differences found. Replacing the old file.")
             save_to_excel(dataframes_dict, file_name=old_output_file)
         logging.info("Main function completed successfully.")
+
     except Exception as e:
         logging.error("Error in main function: %s", e, exc_info=True)
-
 
 
 if __name__ == "__main__":
